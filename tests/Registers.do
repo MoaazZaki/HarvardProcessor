@@ -25,8 +25,8 @@ run
 force -freeze sim:/registers/WADDRESS 010 0
 force -freeze sim:/registers/WDATA 16#5643 0
 run
-force -freeze sim:/registers/OP1 000 0
-force -freeze sim:/registers/OP2 010 0
+force -freeze sim:/registers/OP2 000 0
+force -freeze sim:/registers/OP1 010 0
 force -freeze sim:/registers/writeEnable 0 0
 run
 run
