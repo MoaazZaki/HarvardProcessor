@@ -2,11 +2,11 @@ LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
 
 ENTITY ForwardingUnit IS
-    GENERIC (n : INTEGER := 3); --3 bits to choose from 8 registers
+    GENERIC (REGS_INDEX_SIZE : INTEGER := 3); --3 bits to choose from 8 registers
     PORT (
         EX_MEM_WillIWriteBack, MEM_WB_WillIWriteBack : IN STD_LOGIC;
-        ID_EX_Operand1, ID_EX_Operand2 : IN STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
-        EX_MEM_Operand1, MEM_WB_Operand1 : IN STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+        ID_EX_Operand1, ID_EX_Operand2 : IN STD_LOGIC_VECTOR(REGS_INDEX_SIZE - 1 DOWNTO 0);
+        EX_MEM_Operand1, MEM_WB_Operand1 : IN STD_LOGIC_VECTOR(REGS_INDEX_SIZE - 1 DOWNTO 0);
         SEL_MUX_Operand1, SEL_MUX_Operand2 : OUT STD_LOGIC_VECTOR(1 DOWNTO 0));
 
     -- *****SEL_MUX_Operand1***** --
