@@ -17,7 +17,7 @@ ENTITY ControlUnit IS
     );
 END ControlUnit;
 
-ARCHITECTURE implementation OF ControlUnit IS
+ARCHITECTURE rtl OF ControlUnit IS
     SIGNAL ALU_Operation_temp, MEM_Write_temp, MEM_Read_temp, MEM_useStack_temp, WB_WBEnable_temp : STD_LOGIC;
 BEGIN
     ALU_Src_ImmOrReg <= '0' WHEN (instruction(31 DOWNTO 30) = "00")
