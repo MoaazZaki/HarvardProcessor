@@ -82,7 +82,6 @@ BEGIN
                     flagsOUT(1) <= '1';
                 END IF;
                 result <= tempResult;
-
             ELSIF (operation = "00101") THEN --Or
                 tempResult := operand1 OR operand2;
                 IF (to_integer(unsigned(tempResult)) = 0) THEN --set zero flag
@@ -91,12 +90,12 @@ BEGIN
                     flagsOUT(1) <= '1';
                 END IF;
                 result <= tempResult;
-            ELSIF (operation = "00110") THEN --Sheft left 
-                -- result <= STD_LOGIC_VECTOR(ununsigned(operand1) SLL ununsigned(func));
-                -- TODO:UPDATE CARRY
-            ELSIF (operation = "00111") THEN --Sheft right
-                -- result <= STD_LOGIC_VECTOR(ununsigned(operand1) SRL ununsigned(func));
-                -- TODO:UPDATE CARRY
+            ELSIF (operation = "00110") THEN --Shift left 
+                result <= STD_LOGIC_VECTOR(shift_left(unsigned(operand1), to_integer(unsigned(func))));
+                flagsOUT(2) <= operand1(N - to_integer(unsigned(func)));
+            ELSIF (operation = "00111") THEN --Shift right
+                result <= STD_LOGIC_VECTOR(shift_right(unsigned(operand1), to_integer(unsigned(func))));
+                flagsOUT(2) <= operand1(to_integer(unsigned(func)) - 1);
             ELSE --Add (this is for ALU operations and even memory operations as well)
                 tempResultPlusCarry := STD_LOGIC_VECTOR(unsigned('0' & operand1) + unsigned('0' & operand2));
                 IF (to_integer(unsigned(tempResultPlusCarry)) = 0) THEN --set zero flag
