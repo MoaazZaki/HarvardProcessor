@@ -19,7 +19,7 @@ END ENTITY;
 
 ARCHITECTURE struct OF ALU IS
 BEGIN
-    PROCESS (operand1, operand2, operation, func) -- if flagsIN should be included make it (all)
+    PROCESS (operand1, operand2, operation, func)
         VARIABLE operandComplement : STD_LOGIC_VECTOR(N - 1 DOWNTO 0);
         VARIABLE tempResultPlusCarry : STD_LOGIC_VECTOR(N DOWNTO 0);
         VARIABLE tempResult : STD_LOGIC_VECTOR(N - 1 DOWNTO 0);
