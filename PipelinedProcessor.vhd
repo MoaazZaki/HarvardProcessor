@@ -16,7 +16,7 @@ ENTITY PipelinedProcessor IS
 END PipelinedProcessor;
 
 ARCHITECTURE pipe OF PipelinedProcessor IS
-    -- COMPONENTS
+    ---------------> Start of Components <--------------
     COMPONENT Registers IS
         GENERIC (
             REGS_NUM : INTEGER := 8;
@@ -68,9 +68,25 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
             WB_MemToReg : OUT STD_LOGIC
         );
     END COMPONENT;
-    -- SIGNALS
+    --
+    COMPONENT RAM IS
+        GENERIC (
+            STORED_DATA_SIZE : INTEGER := 16;
+            ADRESS_SIZE : INTEGER := 20;
+            RAM_SIZE : INTEGER := 2 ** 20);
+        PORT (
+            clk, reset : IN STD_LOGIC;
+            we : IN STD_LOGIC;
+            address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
+            datain : IN STD_LOGIC_VECTOR(STORED_DATA_SIZE - 1 DOWNTO 0);
+            dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE - 1 DOWNTO 0));
+    END COMPONENT;
+    ---------------> End of Components <--------------
+    ---------------> Start of Signals <--------------
+    ---------------> Decode Signals <--------------
     SIGNAL DECODEOUT1 : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
     SIGNAL DECODEOUT2 : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    ---------------> Execute Signals <--------------
     SIGNAL ID_EX_IN : STD_LOGIC_VECTOR(101 - 1 DOWNTO 0);
     SIGNAL ID_EX_OUT : STD_LOGIC_VECTOR(101 - 1 DOWNTO 0);
     --(100 DOWNTO 100)ALU_op
@@ -92,11 +108,23 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     -- (0) ZERO_FLAG
     -- (1) NEGATIVE_FLAG
     -- (2) CARRY_FLAG
+    ---------------> Memory Signals <--------------
+    SIGNAL EX_MEM_IN : STD_LOGIC_VECTOR(72 - 1 DOWNTO 0);
+    SIGNAL EX_MEM_OUT : STD_LOGIC_VECTOR(72 - 1 DOWNTO 0);
+    --(71 DOWNTO 71)UseStack 
+    --(70 DOWNTO 70)MemRead 
+    --(69 DOWNTO 69)MemWrite 
+    --(68 DOWNTO 68)WBEnable 
+    --(67 DOWNTO 67)MemToReg  
+    --(66 DOWNTO 35)ALU OUT
+    --(34 DOWNTO 3)OP2 VALUE
+    --(2 DOWNTO 0)OP1 
+    ---------------> Write back Signals <--------------
     SIGNAL MEM_WB_IN : STD_LOGIC_VECTOR(35 - 1 DOWNTO 0);
     SIGNAL MEM_WB_OUT : STD_LOGIC_VECTOR(35 - 1 DOWNTO 0);
     --(34 DOWNTO 32) OP1 ADRESS
     --(31 DOWNTO 0) ALU_OUT
-    ---------------> Control Variables <--------------
+    ---------------> Control Signals <--------------
     SIGNAL CNT_SRC_IS_IMM : STD_LOGIC;
     SIGNAL CNT_IS_ALU_OPERATION : STD_LOGIC;
     SIGNAL CNT_IS_MEM_WRITE : STD_LOGIC;
@@ -104,9 +132,10 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     SIGNAL CNT_IS_STACK : STD_LOGIC;
     SIGNAL CNT_WB_IS_ON : STD_LOGIC;
     SIGNAL CNT_WB_TO_MEM : STD_LOGIC;
-
+    ---------------> Signals use Control Selectors <--------------
     SIGNAL WRTIE_TO_REG : STD_LOGIC;
     SIGNAL OPERAND2 : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    ---------------> End of Signals <--------------
 BEGIN
     WRTIE_TO_REG <= '1'
         WHEN
@@ -125,6 +154,10 @@ BEGIN
         ELSE
         ID_EX_OUT(63 DOWNTO 32);
     ALU_MODULE : ALU PORT MAP(ID_EX_OUT(31 DOWNTO 0), OPERAND2, ID_EX_OUT(73 DOWNTO 69), ID_EX_OUT(68 DOWNTO 64), ALU_OUT, ALU_FLAGS_OUT);
+    -- Memory Stage
+    EX_MEM_IN <= CNT_IS_STACK & CNT_IS_MEM_READ & CNT_IS_MEM_WRITE & CNT_WB_IS_ON & CNT_WB_TO_MEM & ALU_OUT & ID_EX_OUT(63 DOWNTO 32) & ID_EX_OUT(76 DOWNTO 74);
+    EX_MEM_REG : RegisterDFF GENERIC MAP(72) PORT MAP(clk, reset, '1', EX_MEM_IN, EX_MEM_OUT);
+    --MAIN_MEMORY : RAM PORT MAP(clk, reset, '0', EX_MEM_OUT(66 DOWNTO 35), ,) -- TODO: DO SOMETHING ABOUT WRITE ENABLE  ( REPLACE '0' )
     -- WB stage
     MEM_WB_IN <= ID_EX_OUT(76 DOWNTO 74) & ALU_OUT;
     MEM_WB_REG : RegisterDFF GENERIC MAP(35) PORT MAP(clk, reset, '1', MEM_WB_IN, MEM_WB_OUT);
