@@ -36,9 +36,13 @@ BEGIN
         ELSE
         '0'; --I will read from the memory if the instruction is Load or Pop
 
-    MEM_useStack_temp <= '1' WHEN (instruction(31 DOWNTO 27) = "01000") OR (instruction(31 DOWNTO 27) = "01001")
+    MEM_useStack_temp <= '1' WHEN (instruction(31 DOWNTO 27) = "01000")
+        OR (instruction(31 DOWNTO 27) = "01001")
+        OR (instruction(31 DOWNTO 27) = "10100")
+        OR (instruction(31 DOWNTO 27) = "10101")
         ELSE
-        '0'; --I will use the stack if I am Push or Pop (Not taking branch instructions into consideration)
+        '0'; --I will use the stack if I am Push, Pop, Call, or Return
+    --Here using the stack means using sp to access a memory location instead of using the ALU output 
 
     WB_WBEnable_temp <= '1' WHEN ((instruction(31 DOWNTO 27) = "00000")
         AND (NOT (instruction(20 DOWNTO 16) = "00000"))
