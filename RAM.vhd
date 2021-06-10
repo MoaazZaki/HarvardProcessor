@@ -1,166 +1,41 @@
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
-USE IEEE.numeric_std.all;
+USE IEEE.numeric_std.ALL;
 ENTITY RAM IS
-GENERIC ( RAM_SIZE : integer := 64;
-		  STORED_DATA_SIZE : integer := 32;
-        ADRESS_SIZE : integer := 6);
-PORT (clk,reset : IN std_logic;
- we : IN std_logic;
-address : IN std_logic_vector(ADRESS_SIZE-1 DOWNTO 0);
-datain : IN std_logic_vector(STORED_DATA_SIZE-1 DOWNTO 0);
-dataout : OUT std_logic_vector(STORED_DATA_SIZE-1 DOWNTO 0) );
+	GENERIC (
+		STORED_DATA_SIZE : INTEGER := 16;
+		ADRESS_SIZE : INTEGER := 20;
+		RAM_SIZE : INTEGER := 2 ** 20);
+	PORT (
+		clk, reset : IN STD_LOGIC;
+		we : IN STD_LOGIC;
+		address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
+		datain : IN STD_LOGIC_VECTOR(STORED_DATA_SIZE - 1 DOWNTO 0);
+		dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE - 1 DOWNTO 0));
 END ENTITY RAM;
 
 ARCHITECTURE sync_ram_a OF RAM IS
- TYPE ram_type IS ARRAY(0 TO RAM_SIZE-1) of std_logic_vector( STORED_DATA_SIZE - 1 DOWNTO 0);
- SIGNAL ram : ram_type := (
-	0=> X"000002bc",
-	1=> X"000002bb",
-	2=> X"000002ba",
-	3=> X"000002b9",
-	4=> X"000002b8",
-	5=> X"000002b7",
-	6=> X"000002b6",
-	7=> X"000002b5",
-	8=> X"000002b4",
-	9=> X"000002b3",
-	10=> X"000002b2",
-	11=> X"000002b1",
-	12=> X"000002b0",
-	13=> X"000002af",
-	14=> X"000002ae",
-	15=> X"000002ad",
-	16=> X"000002ac",
-	17=> X"000002ab",
-	18=> X"000002aa",
-	19=> X"000002a9",
-	20=> X"000002a8",
-	21=> X"000002a7",
-	22=> X"000002a6",
-	23=> X"000002a5",
-	24=> X"000002a4",
-	25=> X"000002a3",
-	26=> X"000002a2",
-	27=> X"000002a1",
-	28=> X"000002a0",
-	29=> X"0000029f",
-	30=> X"0000029e",
-	31=> X"0000029d",
-	32=> X"0000029c",
-	33=> X"0000029b",
-	34=> X"0000029a",
-	35=> X"00000299",
-	36=> X"00000298",
-	37=> X"00000297",
-	38=> X"00000296",
-	39=> X"00000295",
-	40=> X"00000294",
-	41=> X"00000293",
-	42=> X"00000292",
-	43=> X"00000291",
-	44=> X"00000290",
-	45=> X"0000028f",
-	46=> X"0000028e",
-	47=> X"0000028d",
-	48=> X"0000028c",
-	49=> X"0000028b",
-	50=> X"0000028a",
-	51=> X"00000289",
-	52=> X"00000288",
-	53=> X"00000287",
-	54=> X"00000286",
-	55=> X"00000285",
-	56=> X"00000284",
-	57=> X"00000283",
-	58=> X"00000282",
-	59=> X"00000281",
-	60=> X"00000280",
-	61=> X"0000027f",
-	62=> X"0000027e",
-	63=> X"0000027d"
-	);
+	TYPE ram_type IS ARRAY(0 TO RAM_SIZE - 1) OF STD_LOGIC_VECTOR(STORED_DATA_SIZE - 1 DOWNTO 0);
+	SIGNAL ram : ram_type;
 BEGIN
 
-PROCESS(clk,reset) IS
+	PROCESS (clk, reset) IS
 	BEGIN
-	IF reset = '1' 
-   THEN
-      ram <= (
-		0=> X"000002bc",
-		1=> X"000002bb",
-		2=> X"000002ba",
-		3=> X"000002b9",
-		4=> X"000002b8",
-		5=> X"000002b7",
-		6=> X"000002b6",
-		7=> X"000002b5",
-		8=> X"000002b4",
-		9=> X"000002b3",
-		10=> X"000002b2",
-		11=> X"000002b1",
-		12=> X"000002b0",
-		13=> X"000002af",
-		14=> X"000002ae",
-		15=> X"000002ad",
-		16=> X"000002ac",
-		17=> X"000002ab",
-		18=> X"000002aa",
-		19=> X"000002a9",
-		20=> X"000002a8",
-		21=> X"000002a7",
-		22=> X"000002a6",
-		23=> X"000002a5",
-		24=> X"000002a4",
-		25=> X"000002a3",
-		26=> X"000002a2",
-		27=> X"000002a1",
-		28=> X"000002a0",
-		29=> X"0000029f",
-		30=> X"0000029e",
-		31=> X"0000029d",
-		32=> X"0000029c",
-		33=> X"0000029b",
-		34=> X"0000029a",
-		35=> X"00000299",
-		36=> X"00000298",
-		37=> X"00000297",
-		38=> X"00000296",
-		39=> X"00000295",
-		40=> X"00000294",
-		41=> X"00000293",
-		42=> X"00000292",
-		43=> X"00000291",
-		44=> X"00000290",
-		45=> X"0000028f",
-		46=> X"0000028e",
-		47=> X"0000028d",
-		48=> X"0000028c",
-		49=> X"0000028b",
-		50=> X"0000028a",
-		51=> X"00000289",
-		52=> X"00000288",
-		53=> X"00000287",
-		54=> X"00000286",
-		55=> X"00000285",
-		56=> X"00000284",
-		57=> X"00000283",
-		58=> X"00000282",
-		59=> X"00000281",
-		60=> X"00000280",
-		61=> X"0000027f",
-		62=> X"0000027e",
-		63=> X"0000027d"
-		);
-   ELSIF rising_edge(clk) 
-   THEN
-		IF we = '1' 
-      THEN
-			ram(to_integer(unsigned((address)))) <= datain;
-		END IF;
-	END IF;
-END PROCESS;
+		IF reset = '1' THEN
+			--initialize the memory with zeros
+			INITIALIZE_MEM : FOR i IN 0 TO RAM_SIZE - 1 LOOP
+				ram(i) <= (OTHERS => '0');
+			END LOOP INITIALIZE_MEM;
 
-dataout <= ram(to_integer(unsigned((address))));
+		ELSIF rising_edge(clk)
+			THEN
+			IF we = '1'
+				THEN
+				ram(to_integer(unsigned((address)))) <= datain;
+			END IF;
+		END IF;
+	END PROCESS;
+
+	dataout <= ram(to_integer(unsigned((address))));
 
 END sync_ram_a;

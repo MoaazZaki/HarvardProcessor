@@ -68,12 +68,14 @@ force -freeze sim:/pipelinedprocessor/INTSRUCTION 16#02040000 0
 run
 run
 
+
 #TWO-OPERAND INSTRUCTIONS
 
 #ADD REG1,REG2
 force -freeze sim:/pipelinedprocessor/INTSRUCTION 16#11440000 0
 run
+#Shift Left REG2
+force -freeze sim:/pipelinedprocessor/INTSRUCTION 16#3A010000 0
 run
-
-
-
+run
+run
