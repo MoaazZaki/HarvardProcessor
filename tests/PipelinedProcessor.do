@@ -13,8 +13,8 @@ add wave -position end  sim:/pipelinedprocessor/ALU_OUT
 add wave -position end  sim:/pipelinedprocessor/ALU_FLAGS_OUT
 add wave -position end  sim:/pipelinedprocessor/MEM_WB_IN
 add wave -position end  sim:/pipelinedprocessor/MEM_WB_OUT
-#force -freeze sim:/pipelinedprocessor/clk 0 0, 1 {50 ps} -r 100
-force -freeze sim:/pipelinedprocessor/clk 0 0, 1 {50 ns} -r 100
+force -freeze sim:/pipelinedprocessor/clk 0 0, 1 {50 ps} -r 100
+#force -freeze sim:/pipelinedprocessor/clk 0 0, 1 {50 ns} -r 100
 
 #RESET
 force -freeze sim:/pipelinedprocessor/reset 1 0
