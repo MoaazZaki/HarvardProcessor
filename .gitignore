@@ -2,3 +2,5 @@
 *.mpf
 *.wlf
 work/
+.vscode
+scripts/__pycache__
