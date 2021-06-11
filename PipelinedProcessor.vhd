@@ -78,8 +78,10 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
             clk, reset : IN STD_LOGIC;
             we : IN STD_LOGIC;
             address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
-            datain : IN STD_LOGIC_VECTOR(STORED_DATA_SIZE - 1 DOWNTO 0);
-            dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE - 1 DOWNTO 0));
+            --To read and write two consecuetive places at a time
+            datain : IN STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
+            dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
+            memoryOfZeroForPCReset : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0));
     END COMPONENT;
     ---------------> End of Components <--------------
     ---------------> Start of Signals <--------------
@@ -127,7 +129,7 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     --(67 DOWNTO 67)MemToReg  
     --(66 DOWNTO 35) MEMORY_OUT
     --(34 DOWNTO 3) ALU_OUT
-    --(2 DOWNTO 0) OP1 ADRESS
+    --(2 DOWNTO 0) OP1 ADRESS TODO: I think this should be OP2 address if the instruction is LOAD
     ---------------> Control Signals <--------------
     SIGNAL CNT_SRC_IS_IMM : STD_LOGIC;
     SIGNAL CNT_IS_ALU_OPERATION : STD_LOGIC;
@@ -139,18 +141,25 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     ---------------> Signals use Control Selectors <--------------
     SIGNAL WRTIE_TO_REG : STD_LOGIC;
     SIGNAL OPERAND2 : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    ---------------> Signals EXTRA<--------------
+    SIGNAL memoryOfZeroForPCReset : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    SIGNAL ValueToWriteBackToReg : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
     ---------------> End of Signals <--------------
 BEGIN
     WRTIE_TO_REG <= '1'
         WHEN
         CNT_WB_IS_ON = '1'
         ELSE
-        '0';
+        '0'; --TODO: I think we should replace CNT_WB_IS_ON with (68 DOWNTO 68)WBEnable of MEM_WB_OUT
     -- Decoding stage
-    REG_READ_WRITE : Registers PORT MAP(clk, reset, WRTIE_TO_REG, INTSRUCTION(26 DOWNTO 24), INTSRUCTION(23 DOWNTO 21), MEM_WB_OUT(34 DOWNTO 32), MEM_WB_OUT(31 DOWNTO 0), DECODEOUT1, DECODEOUT2);
+    REG_READ_WRITE : Registers PORT MAP(clk, reset, WRTIE_TO_REG, INTSRUCTION(26 DOWNTO 24), INTSRUCTION(23 DOWNTO 21), MEM_WB_OUT(2 DOWNTO 0), ValueToWriteBackToReg, DECODEOUT1, DECODEOUT2); --TODO: Shouldn't the write back data be coming out MEM_WB_OUT after choosing the ALU output or the memory output
+    --Mohammed: I also changed the write back data to be ValueToWriteBackToReg based on a check below it was MEM_WB_OUT(31 DOWNTO 0) before, Ichencged the write back address from MEM_WB_OUT(34 DOWNTO 32) to MEM_WB_OUT(2 DOWNTO 0) but I think we should aslo do a check 
+    --for that one as well, if the instruction is load we should make the write back address the address of operand 2, otherwise it's the address of operand 1
     CONTROL_UNIT : ControlUnit PORT MAP(INTSRUCTION, '0', CNT_SRC_IS_IMM, CNT_IS_ALU_OPERATION, CNT_IS_MEM_WRITE, CNT_IS_MEM_READ, CNT_IS_STACK, CNT_WB_IS_ON, CNT_WB_TO_MEM); -- TODO: Replace '0' with stall flag
     -- Execute Stage
     ID_EX_IN <= CNT_IS_ALU_OPERATION & CNT_SRC_IS_IMM & CNT_IS_ALU_OPERATION & CNT_IS_STACK & CNT_IS_MEM_READ & CNT_IS_MEM_WRITE & CNT_WB_IS_ON & CNT_WB_TO_MEM & INTSRUCTION(20 DOWNTO 5) & INTSRUCTION(26 DOWNTO 24) & INTSRUCTION(31 DOWNTO 27) & INTSRUCTION(20 DOWNTO 16) & DECODEOUT2 & DECODEOUT1;
+    --here I think we should also add INTSRUCTION(23 DOWNTO 21) to the ID_EX_IN buffer that will increase its size by 3 bits, but it turns out we need both op1 address and op2 address for the write back 
+    --op2 address is needed for the write back if the instruction is load 
     ID_EX_REG : RegisterDFF GENERIC MAP(101) PORT MAP(clk, reset, '1', ID_EX_IN, ID_EX_OUT);
     OPERAND2 <= (31 DOWNTO 16 => ID_EX_OUT(92)) & ID_EX_OUT(92 DOWNTO 77) -- Immediate with Sign extend
         WHEN
@@ -161,10 +170,15 @@ BEGIN
     -- Memory Stage
     EX_MEM_IN <= CNT_IS_STACK & CNT_IS_MEM_READ & CNT_IS_MEM_WRITE & CNT_WB_IS_ON & CNT_WB_TO_MEM & ALU_OUT & ID_EX_OUT(63 DOWNTO 32) & ID_EX_OUT(76 DOWNTO 74);
     EX_MEM_REG : RegisterDFF GENERIC MAP(72) PORT MAP(clk, reset, '1', EX_MEM_IN, EX_MEM_OUT);
-    MAIN_MEMORY : RAM PORT MAP(clk, reset, EX_MEM_OUT(69), EX_MEM_OUT(66 DOWNTO 35), EX_MEM_OUT(34 DOWNTO 3), MEM_OUT); -- TODO: ADD RESET PC output
+    MAIN_MEMORY : RAM PORT MAP(clk, reset, EX_MEM_OUT(69), EX_MEM_OUT(54 DOWNTO 35), EX_MEM_OUT(34 DOWNTO 3), MEM_OUT, memoryOfZeroForPCReset); -- TODO: ADD RESET PC output
     -- WB stage
     MEM_WB_IN <= EX_MEM_OUT(68) & EX_MEM_OUT(67) & MEM_OUT & EX_MEM_OUT(66 DOWNTO 35) & EX_MEM_OUT(2 DOWNTO 0);
     MEM_WB_REG : RegisterDFF GENERIC MAP(69) PORT MAP(clk, reset, '1', MEM_WB_IN, MEM_WB_OUT);
-    OUTP <= MEM_WB_OUT(34 DOWNTO 3);
+    ValueToWriteBackToReg <= MEM_WB_OUT(34 DOWNTO 3)
+        WHEN
+        MEM_WB_OUT(67) = '0'
+        ELSE
+        MEM_WB_OUT(66 DOWNTO 35);
+    OUTP <= ValueToWriteBackToReg;
 
 END ARCHITECTURE;

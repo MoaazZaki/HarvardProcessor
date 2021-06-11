@@ -12,7 +12,8 @@ ENTITY RAM IS
 		address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
 		--To read and write two consecuetive places at a time
 		datain : IN STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
-		dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0));
+		dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
+		memoryOfZeroForPCReset : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0));
 END ENTITY RAM;
 
 ARCHITECTURE sync_ram_a OF RAM IS
@@ -41,5 +42,6 @@ BEGIN
 
 	--Read two places at a time address-->MSBs, address+1-->LSBs
 	dataout <= ram(to_integer(unsigned((address)))) & ram(to_integer(unsigned((address)) + 1));
+	memoryOfZeroForPCReset <= ram(0) & ram(1);
 
 END sync_ram_a;
