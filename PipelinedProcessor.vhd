@@ -89,8 +89,9 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     SIGNAL DECODEOUT1 : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
     SIGNAL DECODEOUT2 : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
     ---------------> Execute Signals <--------------
-    SIGNAL ID_EX_IN : STD_LOGIC_VECTOR(101 - 1 DOWNTO 0);
-    SIGNAL ID_EX_OUT : STD_LOGIC_VECTOR(101 - 1 DOWNTO 0);
+    SIGNAL ID_EX_IN : STD_LOGIC_VECTOR(104 - 1 DOWNTO 0);
+    SIGNAL ID_EX_OUT : STD_LOGIC_VECTOR(104 - 1 DOWNTO 0);
+    --(103 DOWNTO 101)OP2
     --(100 DOWNTO 100)ALU_op
     --(99 DOWNTO 99)ALU_src
     --(98 DOWNTO 98)flag_set
@@ -111,8 +112,9 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     -- (1) NEGATIVE_FLAG
     -- (2) CARRY_FLAG
     ---------------> Memory Signals <--------------
-    SIGNAL EX_MEM_IN : STD_LOGIC_VECTOR(72 - 1 DOWNTO 0);
-    SIGNAL EX_MEM_OUT : STD_LOGIC_VECTOR(72 - 1 DOWNTO 0);
+    SIGNAL EX_MEM_IN : STD_LOGIC_VECTOR(75 - 1 DOWNTO 0);
+    SIGNAL EX_MEM_OUT : STD_LOGIC_VECTOR(75 - 1 DOWNTO 0);
+    --(74 DOWNTO 72)OP2
     --(71 DOWNTO 71)UseStack 
     --(70 DOWNTO 70)MemRead 
     --(69 DOWNTO 69)MemWrite 
@@ -123,8 +125,9 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     --(2 DOWNTO 0)OP1 
     SIGNAL MEM_OUT : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
     ---------------> Write back Signals <--------------
-    SIGNAL MEM_WB_IN : STD_LOGIC_VECTOR(69 - 1 DOWNTO 0);
-    SIGNAL MEM_WB_OUT : STD_LOGIC_VECTOR(69 - 1 DOWNTO 0);
+    SIGNAL MEM_WB_IN : STD_LOGIC_VECTOR(72 - 1 DOWNTO 0);
+    SIGNAL MEM_WB_OUT : STD_LOGIC_VECTOR(72 - 1 DOWNTO 0);
+    --(71 DOWNTO 69)OP2
     --(68 DOWNTO 68)WBEnable 
     --(67 DOWNTO 67)MemToReg  
     --(66 DOWNTO 35) MEMORY_OUT
@@ -144,23 +147,15 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     ---------------> Signals EXTRA<--------------
     SIGNAL memoryOfZeroForPCReset : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
     SIGNAL ValueToWriteBackToReg : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    SIGNAL adressToWriteBackToReg : STD_LOGIC_VECTOR(3 - 1 DOWNTO 0);
     ---------------> End of Signals <--------------
 BEGIN
-    WRTIE_TO_REG <= '1'
-        WHEN
-        CNT_WB_IS_ON = '1'
-        ELSE
-        '0'; --TODO: I think we should replace CNT_WB_IS_ON with (68 DOWNTO 68)WBEnable of MEM_WB_OUT
     -- Decoding stage
-    REG_READ_WRITE : Registers PORT MAP(clk, reset, WRTIE_TO_REG, INTSRUCTION(26 DOWNTO 24), INTSRUCTION(23 DOWNTO 21), MEM_WB_OUT(2 DOWNTO 0), ValueToWriteBackToReg, DECODEOUT1, DECODEOUT2); --TODO: Shouldn't the write back data be coming out MEM_WB_OUT after choosing the ALU output or the memory output
-    --Mohammed: I also changed the write back data to be ValueToWriteBackToReg based on a check below it was MEM_WB_OUT(31 DOWNTO 0) before, Ichencged the write back address from MEM_WB_OUT(34 DOWNTO 32) to MEM_WB_OUT(2 DOWNTO 0) but I think we should aslo do a check 
-    --for that one as well, if the instruction is load we should make the write back address the address of operand 2, otherwise it's the address of operand 1
+    REG_READ_WRITE : Registers PORT MAP(clk, reset, WRTIE_TO_REG, INTSRUCTION(26 DOWNTO 24), INTSRUCTION(23 DOWNTO 21), adressToWriteBackToReg, ValueToWriteBackToReg, DECODEOUT1, DECODEOUT2);
     CONTROL_UNIT : ControlUnit PORT MAP(INTSRUCTION, '0', CNT_SRC_IS_IMM, CNT_IS_ALU_OPERATION, CNT_IS_MEM_WRITE, CNT_IS_MEM_READ, CNT_IS_STACK, CNT_WB_IS_ON, CNT_WB_TO_MEM); -- TODO: Replace '0' with stall flag
     -- Execute Stage
-    ID_EX_IN <= CNT_IS_ALU_OPERATION & CNT_SRC_IS_IMM & CNT_IS_ALU_OPERATION & CNT_IS_STACK & CNT_IS_MEM_READ & CNT_IS_MEM_WRITE & CNT_WB_IS_ON & CNT_WB_TO_MEM & INTSRUCTION(20 DOWNTO 5) & INTSRUCTION(26 DOWNTO 24) & INTSRUCTION(31 DOWNTO 27) & INTSRUCTION(20 DOWNTO 16) & DECODEOUT2 & DECODEOUT1;
-    --here I think we should also add INTSRUCTION(23 DOWNTO 21) to the ID_EX_IN buffer that will increase its size by 3 bits, but it turns out we need both op1 address and op2 address for the write back 
-    --op2 address is needed for the write back if the instruction is load 
-    ID_EX_REG : RegisterDFF GENERIC MAP(101) PORT MAP(clk, reset, '1', ID_EX_IN, ID_EX_OUT);
+    ID_EX_IN <= INTSRUCTION(23 DOWNTO 21) & CNT_IS_ALU_OPERATION & CNT_SRC_IS_IMM & CNT_IS_ALU_OPERATION & CNT_IS_STACK & CNT_IS_MEM_READ & CNT_IS_MEM_WRITE & CNT_WB_IS_ON & CNT_WB_TO_MEM & INTSRUCTION(20 DOWNTO 5) & INTSRUCTION(26 DOWNTO 24) & INTSRUCTION(31 DOWNTO 27) & INTSRUCTION(20 DOWNTO 16) & DECODEOUT2 & DECODEOUT1;
+    ID_EX_REG : RegisterDFF GENERIC MAP(104) PORT MAP(clk, reset, '1', ID_EX_IN, ID_EX_OUT);
     OPERAND2 <= (31 DOWNTO 16 => ID_EX_OUT(92)) & ID_EX_OUT(92 DOWNTO 77) -- Immediate with Sign extend
         WHEN
         ID_EX_OUT(99) = '1'
@@ -168,17 +163,27 @@ BEGIN
         ID_EX_OUT(63 DOWNTO 32);
     ALU_MODULE : ALU PORT MAP(ID_EX_OUT(31 DOWNTO 0), OPERAND2, ID_EX_OUT(73 DOWNTO 69), ID_EX_OUT(68 DOWNTO 64), ALU_OUT, ALU_FLAGS_OUT);
     -- Memory Stage
-    EX_MEM_IN <= CNT_IS_STACK & CNT_IS_MEM_READ & CNT_IS_MEM_WRITE & CNT_WB_IS_ON & CNT_WB_TO_MEM & ALU_OUT & ID_EX_OUT(63 DOWNTO 32) & ID_EX_OUT(76 DOWNTO 74);
-    EX_MEM_REG : RegisterDFF GENERIC MAP(72) PORT MAP(clk, reset, '1', EX_MEM_IN, EX_MEM_OUT);
+    EX_MEM_IN <= ID_EX_OUT(103 DOWNTO 101) & ID_EX_OUT(97) & ID_EX_OUT(96) & ID_EX_OUT(95) & ID_EX_OUT(94) & ID_EX_OUT(93) & ALU_OUT & ID_EX_OUT(63 DOWNTO 32) & ID_EX_OUT(76 DOWNTO 74);
+    EX_MEM_REG : RegisterDFF GENERIC MAP(75) PORT MAP(clk, reset, '1', EX_MEM_IN, EX_MEM_OUT);
     MAIN_MEMORY : RAM PORT MAP(clk, reset, EX_MEM_OUT(69), EX_MEM_OUT(54 DOWNTO 35), EX_MEM_OUT(34 DOWNTO 3), MEM_OUT, memoryOfZeroForPCReset); -- TODO: ADD RESET PC output
     -- WB stage
-    MEM_WB_IN <= EX_MEM_OUT(68) & EX_MEM_OUT(67) & MEM_OUT & EX_MEM_OUT(66 DOWNTO 35) & EX_MEM_OUT(2 DOWNTO 0);
-    MEM_WB_REG : RegisterDFF GENERIC MAP(69) PORT MAP(clk, reset, '1', MEM_WB_IN, MEM_WB_OUT);
+    MEM_WB_IN <= EX_MEM_OUT(74 DOWNTO 72) & EX_MEM_OUT(68) & EX_MEM_OUT(67) & MEM_OUT & EX_MEM_OUT(66 DOWNTO 35) & EX_MEM_OUT(2 DOWNTO 0);
+    MEM_WB_REG : RegisterDFF GENERIC MAP(72) PORT MAP(clk, reset, '1', MEM_WB_IN, MEM_WB_OUT);
     ValueToWriteBackToReg <= MEM_WB_OUT(34 DOWNTO 3)
         WHEN
         MEM_WB_OUT(67) = '0'
         ELSE
         MEM_WB_OUT(66 DOWNTO 35);
+    adressToWriteBackToReg <= MEM_WB_OUT(71 DOWNTO 69)
+        WHEN
+        MEM_WB_OUT(67) = '1'
+        ELSE
+        MEM_WB_OUT(2 DOWNTO 0);
+    WRTIE_TO_REG <= '1'
+        WHEN
+        MEM_WB_OUT(68) = '1'
+        ELSE
+        '0';
     OUTP <= ValueToWriteBackToReg;
 
 END ARCHITECTURE;
