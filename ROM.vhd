@@ -29,8 +29,8 @@ ARCHITECTURE sync_ROM_a OF ROM IS
         VARIABLE ram_content : ROM_type;
         VARIABLE bv : bit_vector(ram_content(0)'RANGE);
     BEGIN
-        -- FOR i IN 0 TO ROM_SIZE - 1 LOOP
-        FOR i IN 0 TO 9 LOOP
+        FOR i IN 0 TO ROM_SIZE - 1 LOOP
+            -- FOR i IN 0 TO 9 LOOP
             readline(text_file, text_line);
             read(text_line, bv);
             ram_content(i) := To_StdLogicVector(bv);
@@ -47,8 +47,8 @@ ARCHITECTURE sync_ROM_a OF ROM IS
         VARIABLE offset : INTEGER;
         VARIABLE hex_val : STD_LOGIC_VECTOR(3 DOWNTO 0);
     BEGIN
-        -- FOR i IN 0 TO ROM_SIZE - 1 LOOP
-        FOR i IN 0 TO 9 LOOP
+        FOR i IN 0 TO ROM_SIZE - 1 LOOP
+            -- FOR i IN 0 TO 9 LOOP
             readline(text_file, text_line);
 
             offset := 0;

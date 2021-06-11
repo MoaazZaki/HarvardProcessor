@@ -179,9 +179,10 @@ BEGIN
     IF_ID_REG : RegisterDFF GENERIC MAP(n) PORT MAP(clk, reset, '1', IF_ID_IN, INSTRUCTION);
     --Increment the PC by 1 if it's a 16-bit instruction and 2 if it's a 32-bit instruction.
     --TODO: More cases will have to be handled if we are gonna implement the branch instructions.
-    PC_IN <= STD_LOGIC_VECTOR(unsigned(PC_OUT) + 1)
-        WHEN
-        IF_ID_IN(30) = '0'
+    PC_IN <= memoryOfZeroForPCReset WHEN reset = '1'
+        ELSE
+        STD_LOGIC_VECTOR(unsigned(PC_OUT) + 1)
+        WHEN IF_ID_IN(30) = '0'
         ELSE
         STD_LOGIC_VECTOR(unsigned(PC_OUT) + 2);
 
