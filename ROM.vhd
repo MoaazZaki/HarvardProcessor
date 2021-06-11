@@ -9,11 +9,8 @@ ENTITY ROM IS
         ADRESS_SIZE : INTEGER := 20;
         ROM_SIZE : INTEGER := 2 ** 20);
     PORT (
-        clk, reset : IN STD_LOGIC;
-        we : IN STD_LOGIC;
         address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
         --To read and write two consecuetive places at a time
-        datain : IN STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
         dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
         memoryOfZeroForPCReset : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0));
 END ENTITY ROM;
@@ -27,13 +24,13 @@ ARCHITECTURE sync_ROM_a OF ROM IS
     --one is used to initialize the memory from a binary file
     --and the other to initialize the memory from a hexa file
     IMPURE FUNCTION init_ram_bin RETURN ROM_type IS
-        FILE text_file : text OPEN read_mode IS "ram_content_bin.txt";
+        FILE text_file : text OPEN read_mode IS "instructions\\ram_content_bin.txt";
         VARIABLE text_line : line;
         VARIABLE ram_content : ROM_type;
         VARIABLE bv : bit_vector(ram_content(0)'RANGE);
     BEGIN
         -- FOR i IN 0 TO ROM_SIZE - 1 LOOP
-        FOR i IN 0 TO 3 LOOP
+        FOR i IN 0 TO 9 LOOP
             readline(text_file, text_line);
             read(text_line, bv);
             ram_content(i) := To_StdLogicVector(bv);
@@ -43,7 +40,7 @@ ARCHITECTURE sync_ROM_a OF ROM IS
     END FUNCTION;
 
     IMPURE FUNCTION init_ram_hex RETURN ROM_type IS
-        FILE text_file : text OPEN read_mode IS "ram_content_hex.txt";
+        FILE text_file : text OPEN read_mode IS "instructions\\ram_content_hex.txt";
         VARIABLE text_line : line;
         VARIABLE ram_content : ROM_type;
         VARIABLE c : CHARACTER;
@@ -51,7 +48,7 @@ ARCHITECTURE sync_ROM_a OF ROM IS
         VARIABLE hex_val : STD_LOGIC_VECTOR(3 DOWNTO 0);
     BEGIN
         -- FOR i IN 0 TO ROM_SIZE - 1 LOOP
-        FOR i IN 0 TO 3 LOOP
+        FOR i IN 0 TO 9 LOOP
             readline(text_file, text_line);
 
             offset := 0;
@@ -98,5 +95,4 @@ BEGIN
     --Read two places at a time address-->MSBs, address+1-->LSBs
     dataout <= ROM(to_integer(unsigned((address)))) & ROM(to_integer(unsigned((address)) + 1));
     memoryOfZeroForPCReset <= ROM(0) & ROM(1);
-
 END sync_ROM_a;

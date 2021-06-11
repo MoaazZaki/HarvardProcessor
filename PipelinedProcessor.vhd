@@ -1,12 +1,13 @@
 LIBRARY IEEE;
 USE IEEE.STD_LOGIC_1164.ALL;
+USE IEEE.numeric_std.ALL;
 
 ENTITY PipelinedProcessor IS
     GENERIC (
         n : INTEGER := 32);
     PORT (
         clk, reset : IN STD_LOGIC;
-        INTSRUCTION : IN STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+        INP : IN STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
         -- (31 DOWNTO 27)OPERATION 
         -- (26 DOWNTO 24)OP1 
         -- (23 DOWNTO 21)OP2 
@@ -80,11 +81,29 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
             address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
             --To read and write two consecuetive places at a time
             datain : IN STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
+            dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0));
+    END COMPONENT;
+    --
+    COMPONENT ROM IS
+        GENERIC (
+            STORED_DATA_SIZE : INTEGER := 16;
+            ADRESS_SIZE : INTEGER := 20;
+            ROM_SIZE : INTEGER := 2 ** 20);
+        PORT (
+            address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
+            --To read and write two consecuetive places at a time
             dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
             memoryOfZeroForPCReset : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0));
     END COMPONENT;
     ---------------> End of Components <--------------
     ---------------> Start of Signals <--------------
+    ---------------> Fetch Signals <--------------
+    -- SIGNAL INSTRUCTION : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    SIGNAL IF_ID_IN : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    SIGNAL INSTRUCTION : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    SIGNAL PC_IN : STD_LOGIC_VECTOR(n - 1 DOWNTO 0) := (OTHERS => '0');
+    SIGNAL PC_OUT : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+
     ---------------> Decode Signals <--------------
     SIGNAL DECODEOUT1 : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
     SIGNAL DECODEOUT2 : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
@@ -150,11 +169,27 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     SIGNAL adressToWriteBackToReg : STD_LOGIC_VECTOR(3 - 1 DOWNTO 0);
     ---------------> End of Signals <--------------
 BEGIN
+    -- Fetching stage
+
+    --PC Register
+    PC_REG : RegisterDFF GENERIC MAP(n) PORT MAP(clk, reset, '1', PC_IN, PC_OUT); --TODO: in case we are gonna implement the branch instructions, the write enable won't always be 1.
+    --Fetch the instruction from the ROM
+    INSTRUCTIONS_MEMORY : ROM PORT MAP(PC_OUT(19 DOWNTO 0), IF_ID_IN, memoryOfZeroForPCReset);
+    --IF_ID Buffer
+    IF_ID_REG : RegisterDFF GENERIC MAP(n) PORT MAP(clk, reset, '1', IF_ID_IN, INSTRUCTION);
+    --Increment the PC by 1 if it's a 16-bit instruction and 2 if it's a 32-bit instruction.
+    --TODO: More cases will have to be handled if we are gonna implement the branch instructions.
+    PC_IN <= STD_LOGIC_VECTOR(unsigned(PC_OUT) + 1)
+        WHEN
+        IF_ID_IN(30) = '0'
+        ELSE
+        STD_LOGIC_VECTOR(unsigned(PC_OUT) + 2);
+
     -- Decoding stage
-    REG_READ_WRITE : Registers PORT MAP(clk, reset, WRTIE_TO_REG, INTSRUCTION(26 DOWNTO 24), INTSRUCTION(23 DOWNTO 21), adressToWriteBackToReg, ValueToWriteBackToReg, DECODEOUT1, DECODEOUT2);
-    CONTROL_UNIT : ControlUnit PORT MAP(INTSRUCTION, '0', CNT_SRC_IS_IMM, CNT_IS_ALU_OPERATION, CNT_IS_MEM_WRITE, CNT_IS_MEM_READ, CNT_IS_STACK, CNT_WB_IS_ON, CNT_WB_TO_MEM); -- TODO: Replace '0' with stall flag
+    REG_READ_WRITE : Registers PORT MAP(clk, reset, WRTIE_TO_REG, INSTRUCTION(26 DOWNTO 24), INSTRUCTION(23 DOWNTO 21), adressToWriteBackToReg, ValueToWriteBackToReg, DECODEOUT1, DECODEOUT2);
+    CONTROL_UNIT : ControlUnit PORT MAP(INSTRUCTION, '0', CNT_SRC_IS_IMM, CNT_IS_ALU_OPERATION, CNT_IS_MEM_WRITE, CNT_IS_MEM_READ, CNT_IS_STACK, CNT_WB_IS_ON, CNT_WB_TO_MEM); -- TODO: Replace '0' with stall flag
     -- Execute Stage
-    ID_EX_IN <= INTSRUCTION(23 DOWNTO 21) & CNT_IS_ALU_OPERATION & CNT_SRC_IS_IMM & CNT_IS_ALU_OPERATION & CNT_IS_STACK & CNT_IS_MEM_READ & CNT_IS_MEM_WRITE & CNT_WB_IS_ON & CNT_WB_TO_MEM & INTSRUCTION(20 DOWNTO 5) & INTSRUCTION(26 DOWNTO 24) & INTSRUCTION(31 DOWNTO 27) & INTSRUCTION(20 DOWNTO 16) & DECODEOUT2 & DECODEOUT1;
+    ID_EX_IN <= INSTRUCTION(23 DOWNTO 21) & CNT_IS_ALU_OPERATION & CNT_SRC_IS_IMM & CNT_IS_ALU_OPERATION & CNT_IS_STACK & CNT_IS_MEM_READ & CNT_IS_MEM_WRITE & CNT_WB_IS_ON & CNT_WB_TO_MEM & INSTRUCTION(20 DOWNTO 5) & INSTRUCTION(26 DOWNTO 24) & INSTRUCTION(31 DOWNTO 27) & INSTRUCTION(20 DOWNTO 16) & DECODEOUT2 & DECODEOUT1;
     ID_EX_REG : RegisterDFF GENERIC MAP(104) PORT MAP(clk, reset, '1', ID_EX_IN, ID_EX_OUT);
     OPERAND2 <= (31 DOWNTO 16 => ID_EX_OUT(92)) & ID_EX_OUT(92 DOWNTO 77) -- Immediate with Sign extend
         WHEN
@@ -165,7 +200,7 @@ BEGIN
     -- Memory Stage
     EX_MEM_IN <= ID_EX_OUT(103 DOWNTO 101) & ID_EX_OUT(97) & ID_EX_OUT(96) & ID_EX_OUT(95) & ID_EX_OUT(94) & ID_EX_OUT(93) & ALU_OUT & ID_EX_OUT(63 DOWNTO 32) & ID_EX_OUT(76 DOWNTO 74);
     EX_MEM_REG : RegisterDFF GENERIC MAP(75) PORT MAP(clk, reset, '1', EX_MEM_IN, EX_MEM_OUT);
-    MAIN_MEMORY : RAM PORT MAP(clk, reset, EX_MEM_OUT(69), EX_MEM_OUT(54 DOWNTO 35), EX_MEM_OUT(34 DOWNTO 3), MEM_OUT, memoryOfZeroForPCReset); -- TODO: ADD RESET PC output
+    MAIN_MEMORY : RAM PORT MAP(clk, reset, EX_MEM_OUT(69), EX_MEM_OUT(54 DOWNTO 35), EX_MEM_OUT(34 DOWNTO 3), MEM_OUT);
     -- WB stage
     MEM_WB_IN <= EX_MEM_OUT(74 DOWNTO 72) & EX_MEM_OUT(68) & EX_MEM_OUT(67) & MEM_OUT & EX_MEM_OUT(66 DOWNTO 35) & EX_MEM_OUT(2 DOWNTO 0);
     MEM_WB_REG : RegisterDFF GENERIC MAP(72) PORT MAP(clk, reset, '1', MEM_WB_IN, MEM_WB_OUT);
