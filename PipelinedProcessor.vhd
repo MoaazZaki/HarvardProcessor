@@ -55,6 +55,15 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
             q : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0));
     END COMPONENT;
     --
+    COMPONENT RegisterPC IS
+        GENERIC (n : INTEGER := 32);
+        PORT (
+            clk, reset, enable : IN STD_LOGIC;
+            memoryOfZero : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
+            d : IN STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+            q : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0));
+    END COMPONENT;
+    --
     COMPONENT ControlUnit IS
         GENERIC (N : INTEGER := 32);
         PORT (
@@ -93,7 +102,7 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
             address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
             --To read and write two consecuetive places at a time
             dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
-            memoryOfZeroForPCReset : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0));
+            memoryOfZeroForPCReset : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE - 1 DOWNTO 0));
     END COMPONENT;
     ---------------> End of Components <--------------
     ---------------> Start of Signals <--------------
@@ -164,7 +173,7 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     SIGNAL WRTIE_TO_REG : STD_LOGIC;
     SIGNAL OPERAND2 : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
     ---------------> Signals EXTRA<--------------
-    SIGNAL memoryOfZeroForPCReset : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    SIGNAL memoryOfZeroForPCReset : STD_LOGIC_VECTOR(16 - 1 DOWNTO 0);
     SIGNAL ValueToWriteBackToReg : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
     SIGNAL adressToWriteBackToReg : STD_LOGIC_VECTOR(3 - 1 DOWNTO 0);
     ---------------> End of Signals <--------------
@@ -172,16 +181,14 @@ BEGIN
     -- Fetching stage
 
     --PC Register
-    PC_REG : RegisterDFF GENERIC MAP(n) PORT MAP(clk, reset, '1', PC_IN, PC_OUT); --TODO: in case we are gonna implement the branch instructions, the write enable won't always be 1.
+    PC_REG : RegisterPC GENERIC MAP(n) PORT MAP(clk, reset, '1', memoryOfZeroForPCReset, PC_IN, PC_OUT); --TODO: in case we are gonna implement the branch instructions, the write enable won't always be 1.
     --Fetch the instruction from the ROM
     INSTRUCTIONS_MEMORY : ROM PORT MAP(PC_OUT(19 DOWNTO 0), IF_ID_IN, memoryOfZeroForPCReset);
     --IF_ID Buffer
     IF_ID_REG : RegisterDFF GENERIC MAP(n) PORT MAP(clk, reset, '1', IF_ID_IN, INSTRUCTION);
     --Increment the PC by 1 if it's a 16-bit instruction and 2 if it's a 32-bit instruction.
     --TODO: More cases will have to be handled if we are gonna implement the branch instructions.
-    PC_IN <= memoryOfZeroForPCReset WHEN reset = '1'
-        ELSE
-        STD_LOGIC_VECTOR(unsigned(PC_OUT) + 1)
+    PC_IN <= STD_LOGIC_VECTOR(unsigned(PC_OUT) + 1)
         WHEN IF_ID_IN(30) = '0'
         ELSE
         STD_LOGIC_VECTOR(unsigned(PC_OUT) + 2);

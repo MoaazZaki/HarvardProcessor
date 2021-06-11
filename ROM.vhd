@@ -12,7 +12,7 @@ ENTITY ROM IS
         address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
         --To read and write two consecuetive places at a time
         dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
-        memoryOfZeroForPCReset : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0));
+        memoryOfZeroForPCReset : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE - 1 DOWNTO 0));
 END ENTITY ROM;
 
 ARCHITECTURE sync_ROM_a OF ROM IS
@@ -23,8 +23,8 @@ ARCHITECTURE sync_ROM_a OF ROM IS
     --Author: Jonas Julian Jensen
     --one is used to initialize the memory from a binary file
     --and the other to initialize the memory from a hexa file
-    IMPURE FUNCTION init_ram_bin RETURN ROM_type IS
-        FILE text_file : text OPEN read_mode IS "instructions\\ram_content_bin.txt";
+    IMPURE FUNCTION init_rom_bin RETURN ROM_type IS
+        FILE text_file : text OPEN read_mode IS "instructions\\rom_content_bin.txt";
         VARIABLE text_line : line;
         VARIABLE ram_content : ROM_type;
         VARIABLE bv : bit_vector(ram_content(0)'RANGE);
@@ -39,8 +39,8 @@ ARCHITECTURE sync_ROM_a OF ROM IS
         RETURN ram_content;
     END FUNCTION;
 
-    IMPURE FUNCTION init_ram_hex RETURN ROM_type IS
-        FILE text_file : text OPEN read_mode IS "instructions\\ram_content_hex.txt";
+    IMPURE FUNCTION init_rom_hex RETURN ROM_type IS
+        FILE text_file : text OPEN read_mode IS "instructions\\rom_content_hex.txt";
         VARIABLE text_line : line;
         VARIABLE ram_content : ROM_type;
         VARIABLE c : CHARACTER;
@@ -89,10 +89,10 @@ ARCHITECTURE sync_ROM_a OF ROM IS
         RETURN ram_content;
     END FUNCTION;
     ---end of initialization functions
-    SIGNAL ROM : ROM_type := init_ram_hex;
+    SIGNAL ROM : ROM_type := init_rom_bin;
 BEGIN
     --READ ONLY MEMORY no writing is required
     --Read two places at a time address-->MSBs, address+1-->LSBs
     dataout <= ROM(to_integer(unsigned((address)))) & ROM(to_integer(unsigned((address)) + 1));
-    memoryOfZeroForPCReset <= ROM(0) & ROM(1);
+    memoryOfZeroForPCReset <= ROM(0);
 END sync_ROM_a;
