@@ -4,3 +4,4 @@
 work/
 .vscode
 scripts/__pycache__
+wlf*
