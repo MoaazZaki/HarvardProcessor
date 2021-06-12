@@ -13,12 +13,14 @@ ENTITY ControlUnit IS
         MEM_Read : OUT STD_LOGIC;
         MEM_useStack : OUT STD_LOGIC;
         WB_WBEnable : OUT STD_LOGIC;
-        WB_MemToReg : OUT STD_LOGIC
+        WB_MemToReg : OUT STD_LOGIC;
+        IN_PORT_INSTR : OUT STD_LOGIC;
+        OUT_PORT_INSTR : OUT STD_LOGIC
     );
 END ControlUnit;
 
 ARCHITECTURE rtl OF ControlUnit IS
-    SIGNAL ALU_Operation_temp, MEM_Write_temp, MEM_Read_temp, MEM_useStack_temp, WB_WBEnable_temp : STD_LOGIC;
+    SIGNAL ALU_Operation_temp, MEM_Write_temp, MEM_Read_temp, MEM_useStack_temp, WB_WBEnable_temp, IN_PORT_INSTR_temp, OUT_PORT_INSTR_temp : STD_LOGIC;
 BEGIN
     ALU_Src_ImmOrReg <= '0' WHEN (instruction(31 DOWNTO 30) = "00")
         ELSE
@@ -60,6 +62,13 @@ BEGIN
         ELSE --Whether I will write back the output of the ALU or the output of the memory
         '0'; --The only 2 cases I will write back the output of the memory -->(Pop, Load)
 
+    IN_PORT_INSTR_temp <= '1' WHEN (instruction(31 DOWNTO 27) = "00000") AND (instruction(20 DOWNTO 16) = "00111")
+        ELSE
+        '0';
+
+    OUT_PORT_INSTR_temp <= '1' WHEN (instruction(31 DOWNTO 27) = "00000") AND (instruction(20 DOWNTO 16) = "00110")
+        ELSE
+        '0';
     -------------------Stalling Conditions---------------------------
     ALU_Operation <= ALU_Operation_temp WHEN (IshouldStall = '0')
         ELSE
@@ -78,6 +87,14 @@ BEGIN
         '0';
 
     WB_WBEnable <= WB_WBEnable_temp WHEN (IshouldStall = '0')
+        ELSE
+        '0';
+
+    IN_PORT_INSTR <= IN_PORT_INSTR_temp WHEN (IshouldStall = '0')
+        ELSE
+        '0';
+
+    OUT_PORT_INSTR <= OUT_PORT_INSTR_temp WHEN (IshouldStall = '0')
         ELSE
         '0';
 
