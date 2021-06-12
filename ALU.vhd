@@ -62,6 +62,7 @@ BEGIN
             ELSIF (func = "00110") THEN --out
                 result <= operand1;
             ELSE --in
+                result <= operand1;
             END IF;
         ELSE --TWO-OPERAND OPERATIONS
             IF (operation = "00001" OR operation = "01110") THEN --Move (either register or immediate)
