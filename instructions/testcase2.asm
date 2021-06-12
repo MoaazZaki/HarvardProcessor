@@ -3,7 +3,7 @@
 .ORG 10
 INC R0 # R0 = 1
 INC R1 # R1 = 1
-INC R2 # R2 = 1
+IN R2 # R2 = 1
 INC R3 # R3 = 1
 PUSH R0 # M(2**20 -2) = 1
 INC R4 # R4 = 1
