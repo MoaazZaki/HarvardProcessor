@@ -120,7 +120,8 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     ---------------> Start of Signals <--------------
     ---------------> Fetch Signals <--------------
     -- SIGNAL INSTRUCTION : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
-    SIGNAL IF_ID_IN : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    SIGNAL FETCHED_INSTRUCTION : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    SIGNAL IF_ID_IN : STD_LOGIC_VECTOR(2 * n - 1 DOWNTO 0);
     SIGNAL IF_ID_OUT : STD_LOGIC_VECTOR(2 * n - 1 DOWNTO 0);
     --(63 DOWNTO 32) INPUT_PORT
     --(31 DOWNTO 0) INSTRUCTION
@@ -177,8 +178,9 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     SIGNAL MEM_OUT : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
     SIGNAL MEMORY_ADDRESS : STD_LOGIC_VECTOR(20 - 1 DOWNTO 0);
     ---------------> Write back Signals <--------------
-    SIGNAL MEM_WB_IN : STD_LOGIC_VECTOR(105 - 1 DOWNTO 0);
-    SIGNAL MEM_WB_OUT : STD_LOGIC_VECTOR(105 - 1 DOWNTO 0);
+    SIGNAL MEM_WB_IN : STD_LOGIC_VECTOR(106 - 1 DOWNTO 0);
+    SIGNAL MEM_WB_OUT : STD_LOGIC_VECTOR(106 - 1 DOWNTO 0);
+    --(105 DOWNTO 105)UseStack 
     --(104 DOWNTO 73) INPUT_PORT
     --(72 DOWNTO 72) IS_IN
     --(71 DOWNTO 69)OP2
@@ -214,14 +216,15 @@ BEGIN
     --PC Register
     PC_REG : RegisterPC GENERIC MAP(n) PORT MAP(clk, reset, '1', memoryOfZeroForPCReset, PC_IN, PC_OUT); --TODO: in case we are gonna implement the branch instructions, the write enable won't always be 1.
     --Fetch the instruction from the ROM
-    INSTRUCTIONS_MEMORY : ROM PORT MAP(PC_OUT(19 DOWNTO 0), IF_ID_IN, memoryOfZeroForPCReset);
+    INSTRUCTIONS_MEMORY : ROM PORT MAP(PC_OUT(19 DOWNTO 0), FETCHED_INSTRUCTION, memoryOfZeroForPCReset);
     --IF_ID Buffer
-    IF_ID_REG : RegisterDFF GENERIC MAP(2 * n) PORT MAP(clk, reset, '1', INP & IF_ID_IN, IF_ID_OUT);
+    IF_ID_IN <= INP & FETCHED_INSTRUCTION;
+    IF_ID_REG : RegisterDFF GENERIC MAP(64) PORT MAP(clk, reset, '1', IF_ID_IN, IF_ID_OUT);
     INSTRUCTION <= IF_ID_OUT(31 DOWNTO 0);
     --Increment the PC by 1 if it's a 16-bit instruction and 2 if it's a 32-bit instruction.
     --TODO: More cases will have to be handled if we are gonna implement the branch instructions.
     PC_IN <= STD_LOGIC_VECTOR(unsigned(PC_OUT) + 1)
-        WHEN IF_ID_IN(30) = '0'
+        WHEN FETCHED_INSTRUCTION(30) = '0'
         ELSE
         STD_LOGIC_VECTOR(unsigned(PC_OUT) + 2);
 
@@ -251,21 +254,27 @@ BEGIN
     MEMORY_ADDRESS <= EX_MEM_OUT(54 DOWNTO 35)
         WHEN EX_MEM_OUT(71) = '0'
         ELSE
-        SP_OUT(19 DOWNTO 0);
+        SP_OUT(19 DOWNTO 0)
+        WHEN EX_MEM_OUT(76) = '1'
+        ELSE
+        STD_LOGIC_VECTOR(unsigned(SP_OUT(19 DOWNTO 0)) + 2);
 
     --Things related to the stack register
     SP_REG : RegisterSP GENERIC MAP(32) PORT MAP(clk, reset, EX_MEM_OUT(71), SP_IN, SP_OUT);
+
     SP_IN_temp <= STD_LOGIC_VECTOR(unsigned(SP_OUT) + 2)
         WHEN EX_MEM_OUT(76) = '0'
         ELSE
         STD_LOGIC_VECTOR(unsigned(SP_OUT) - 2);
+
     SP_IN <= SP_IN_temp WHEN EX_MEM_OUT(71) = '1'
+        -- AND EX_MEM_OUT(76) = '1'
         ELSE
         SP_OUT;
 
     -- WB stage
-    MEM_WB_IN <= EX_MEM_OUT(109 DOWNTO 78) & EX_MEM_OUT(75) & EX_MEM_OUT(74 DOWNTO 72) & EX_MEM_OUT(68) & EX_MEM_OUT(67) & MEM_OUT & EX_MEM_OUT(66 DOWNTO 35) & EX_MEM_OUT(2 DOWNTO 0);
-    MEM_WB_REG : RegisterDFF GENERIC MAP(105) PORT MAP(clk, reset, '1', MEM_WB_IN, MEM_WB_OUT);
+    MEM_WB_IN <= EX_MEM_OUT(71) & EX_MEM_OUT(109 DOWNTO 78) & EX_MEM_OUT(75) & EX_MEM_OUT(74 DOWNTO 72) & EX_MEM_OUT(68) & EX_MEM_OUT(67) & MEM_OUT & EX_MEM_OUT(66 DOWNTO 35) & EX_MEM_OUT(2 DOWNTO 0);
+    MEM_WB_REG : RegisterDFF GENERIC MAP(106) PORT MAP(clk, reset, '1', MEM_WB_IN, MEM_WB_OUT);
     ValueToWriteBackToReg <= MEM_WB_OUT(34 DOWNTO 3)
         WHEN
         MEM_WB_OUT(67) = '0' AND MEM_WB_OUT(72) = '0'
@@ -277,7 +286,7 @@ BEGIN
         MEM_WB_OUT(66 DOWNTO 35);
     adressToWriteBackToReg <= MEM_WB_OUT(71 DOWNTO 69)
         WHEN
-        MEM_WB_OUT(67) = '1'
+        MEM_WB_OUT(67) = '1' AND MEM_WB_OUT(105) = '0'
         ELSE
         MEM_WB_OUT(2 DOWNTO 0);
     WRTIE_TO_REG <= '1'
