@@ -1,0 +1,13 @@
+.ORG 0
+10
+.ORG 10
+INC R0 # R0 = 1
+INC R1 # R1 = 1
+INC R2 # R2 = 1
+INC R3 # R3 = 1
+PUSH R0 # M(2**20 -2) = 1
+INC R4 # R4 = 1
+SHL R5,1 # R5 = 0
+INC R6 # R6 = 1
+OUT R1 # OUTP = 1
+POP R7 # R7 = 1
