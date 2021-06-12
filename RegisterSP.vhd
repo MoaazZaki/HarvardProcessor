@@ -16,7 +16,7 @@ BEGIN
     PROCESS (clk, reset)
     BEGIN
         IF reset = '1' THEN
-            q <= STD_LOGIC_VECTOR(unsigned(2 ** 20 - 2));
+            q <= STD_LOGIC_VECTOR(to_unsigned(2 ** 20 - 2, n));
         ELSIF rising_edge(clk) AND enable = '1' THEN
             q <= d;
         END IF;
