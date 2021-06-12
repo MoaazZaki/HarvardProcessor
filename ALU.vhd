@@ -66,7 +66,7 @@ BEGIN
             END IF;
         ELSE --TWO-OPERAND OPERATIONS
             IF (operation = "00001" OR operation = "01110") THEN --Move (either register or immediate)
-                result <= operand1;
+                result <= operand2;
             ELSIF (operation = "00011") THEN --Sub
                 tempResultPlusCarry := STD_LOGIC_VECTOR(unsigned('0' & operand1) - unsigned('0' & operand2));
                 IF (to_integer(unsigned(tempResultPlusCarry)) = 0) THEN --set zero flag

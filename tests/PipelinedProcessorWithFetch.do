@@ -10,11 +10,29 @@ run
 force -freeze sim:/pipelinedprocessor/reset 0 0
 force -freeze sim:/pipelinedprocessor/INP 32'hAAAAAAAA 0
 
-#INSTRUCTIONS=8--> clock cycles=5+10-1=14
+#INSTRUCTIONS=8--> clock cycles=5+26-1=30
 run
 run
 run
 run
+run
+run
+run
+run
+run
+run
+
+run
+run
+run
+run
+run
+run
+run
+run
+run
+run
+
 run
 run
 run

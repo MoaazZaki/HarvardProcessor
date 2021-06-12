@@ -284,11 +284,13 @@ BEGIN
         MEM_WB_OUT(67) = '0' AND MEM_WB_OUT(72) = '1'
         ELSE
         MEM_WB_OUT(66 DOWNTO 35);
-    adressToWriteBackToReg <= MEM_WB_OUT(71 DOWNTO 69)
+
+    adressToWriteBackToReg <= MEM_WB_OUT(71 DOWNTO 69) --take op2 address
         WHEN
-        MEM_WB_OUT(67) = '1' AND MEM_WB_OUT(105) = '0'
+        MEM_WB_OUT(67) = '1' AND MEM_WB_OUT(105) = '0' --in case it's a memory inst. and not push,pop,call,ret
         ELSE
-        MEM_WB_OUT(2 DOWNTO 0);
+        MEM_WB_OUT(2 DOWNTO 0);--take op1 address otherwise
+
     WRTIE_TO_REG <= '1'
         WHEN
         MEM_WB_OUT(68) = '1'
