@@ -27,6 +27,7 @@ BEGIN
         IF (operation = "00000") THEN --ONE-OPERAND OPERATIONS
             IF (func = "00000") THEN --No operation
                 flagsOUT <= "000";
+                result <= (OTHERS => '0');
             ELSIF (func = "00001") THEN --Set carry
                 flagsOUT(2) <= '1';
             ELSIF (func = "00010") THEN --Clear carry
