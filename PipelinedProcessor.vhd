@@ -261,7 +261,11 @@ BEGIN
     MEM_WB_REG : RegisterDFF GENERIC MAP(73) PORT MAP(clk, reset, '1', MEM_WB_IN, MEM_WB_OUT);
     ValueToWriteBackToReg <= MEM_WB_OUT(34 DOWNTO 3)
         WHEN
-        MEM_WB_OUT(67) = '0'
+        MEM_WB_OUT(67) = '0' AND MEM_WB_OUT(72) = '0'
+        ELSE
+        INP
+        WHEN
+        MEM_WB_OUT(67) = '0' AND MEM_WB_OUT(72) = '1'
         ELSE
         MEM_WB_OUT(66 DOWNTO 35);
     adressToWriteBackToReg <= MEM_WB_OUT(71 DOWNTO 69)
