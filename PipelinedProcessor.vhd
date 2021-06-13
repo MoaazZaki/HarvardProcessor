@@ -136,6 +136,17 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
         -- 1x--> ELSE NO FORWARDIND
 
     END COMPONENT;
+    --
+    COMPONENT HazardDetectionUnit IS
+        GENERIC (REG_SIZE : INTEGER := 3);
+        PORT (
+            BT, MEM : IN STD_LOGIC;
+            OP1 : IN STD_LOGIC_VECTOR(REG_SIZE - 1 DOWNTO 0);
+            OP2 : IN STD_LOGIC_VECTOR(REG_SIZE - 1 DOWNTO 0);
+            LOAD_OP : IN STD_LOGIC_VECTOR(REG_SIZE - 1 DOWNTO 0);
+            OUT1, OUT2, OUT3 : OUT STD_LOGIC
+        );
+    END COMPONENT;
     ---------------> End of Components <--------------
     ---------------> Start of Signals <--------------
     ---------------> Fetch Signals <--------------
@@ -221,6 +232,13 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     SIGNAL CNT_IS_OUT : STD_LOGIC;
     SIGNAL CNT_IS_ADD2_OR_SUB2_STACK : STD_LOGIC;
     SIGNAL CNT_IS_CALL_INST : STD_LOGIC;
+    ---------------> Hazard Signals <--------------
+    SIGNAL HZD_CHANGE_PC : STD_LOGIC;
+    SIGNAL HZD_CHANGE_IF_ID_BUFFER : STD_LOGIC;
+    SIGNAL HZD_STALL : STD_LOGIC;
+
+    SIGNAL PC_ENABLE : STD_LOGIC;
+    SIGNAL IF_ID_ENABLE : STD_LOGIC;
     ---------------> Signals use Control Selectors <--------------
     SIGNAL WRTIE_TO_REG : STD_LOGIC;
     SIGNAL OPERAND2 : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
@@ -240,12 +258,22 @@ BEGIN
     -- Fetching stage
 
     --PC Register
-    PC_REG : RegisterPC GENERIC MAP(n) PORT MAP(clk, reset, '1', memoryOfZeroForPCReset, PC_IN, PC_OUT); --TODO: in case we are gonna implement the branch instructions, the write enable won't always be 1.
+    PC_ENABLE <= '0'
+        WHEN
+        HZD_CHANGE_PC = '0'
+        ELSE
+        '1';
+    PC_REG : RegisterPC GENERIC MAP(n) PORT MAP(clk, reset, PC_ENABLE, memoryOfZeroForPCReset, PC_IN, PC_OUT); --TODO: in case we are gonna implement the branch instructions, the write enable won't always be 1.
     --Fetch the instruction from the ROM
     INSTRUCTIONS_MEMORY : ROM PORT MAP(PC_OUT(19 DOWNTO 0), FETCHED_INSTRUCTION, memoryOfZeroForPCReset);
     --IF_ID Buffer
     IF_ID_IN <= INP & FETCHED_INSTRUCTION;
-    IF_ID_REG : RegisterDFF GENERIC MAP(64) PORT MAP(clk, reset, '1', IF_ID_IN, IF_ID_OUT);
+    IF_ID_ENABLE <= '0'
+        WHEN
+        HZD_CHANGE_IF_ID_BUFFER = '0'
+        ELSE
+        '1';
+    IF_ID_REG : RegisterDFF GENERIC MAP(64) PORT MAP(clk, reset, IF_ID_ENABLE, IF_ID_IN, IF_ID_OUT);
     INSTRUCTION <= IF_ID_OUT(31 DOWNTO 0);
     --Increment the PC by 1 if it's a 16-bit instruction and 2 if it's a 32-bit instruction.
     --TODO: More cases will have to be handled if we are gonna implement the branch instructions.
@@ -256,7 +284,8 @@ BEGIN
 
     -- Decoding stage
     REG_READ_WRITE : Registers PORT MAP(clk, reset, WRTIE_TO_REG, INSTRUCTION(26 DOWNTO 24), INSTRUCTION(23 DOWNTO 21), adressToWriteBackToReg_MEM_WB, ValueToWriteBackToReg_MEM_WB, DECODEOUT1, DECODEOUT2);
-    CONTROL_UNIT : ControlUnit PORT MAP(INSTRUCTION, '0', CNT_SRC_IS_IMM, CNT_IS_ALU_OPERATION, CNT_IS_MEM_WRITE, CNT_IS_MEM_READ, CNT_IS_STACK, CNT_WB_IS_ON, CNT_WB_TO_MEM, CNT_IS_IN, CNT_IS_OUT, CNT_IS_ADD2_OR_SUB2_STACK, CNT_IS_CALL_INST); -- TODO: Replace '0' with stall flag
+    HAZARD_DETECTION_UNIT : HazardDetectionUnit PORT MAP('0', ID_EX_OUT(96), INSTRUCTION(26 DOWNTO 24), INSTRUCTION(23 DOWNTO 21), ID_EX_OUT(103 DOWNTO 101), HZD_CHANGE_IF_ID_BUFFER, HZD_CHANGE_PC, HZD_STALL); --TODO:  in case we are gonna implement the branch instructions, the BT flag won't always be 1.
+    CONTROL_UNIT : ControlUnit PORT MAP(INSTRUCTION, HZD_STALL, CNT_SRC_IS_IMM, CNT_IS_ALU_OPERATION, CNT_IS_MEM_WRITE, CNT_IS_MEM_READ, CNT_IS_STACK, CNT_WB_IS_ON, CNT_WB_TO_MEM, CNT_IS_IN, CNT_IS_OUT, CNT_IS_ADD2_OR_SUB2_STACK, CNT_IS_CALL_INST); -- TODO: Replace '0' with stall flag
     OUTP <= DECODEOUT1 -- OUTPORT
         WHEN
         CNT_IS_OUT = '1'
