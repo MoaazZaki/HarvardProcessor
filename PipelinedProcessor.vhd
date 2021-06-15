@@ -7,13 +7,13 @@ ENTITY PipelinedProcessor IS
         n : INTEGER := 32);
     PORT (
         clk, reset : IN STD_LOGIC;
-        INP : IN STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+        INP : IN STD_LOGIC_VECTOR(n - 1 DOWNTO 0) := (OTHERS => '0');
         -- (31 DOWNTO 27)OPERATION 
         -- (26 DOWNTO 24)OP1 
         -- (23 DOWNTO 21)OP2 
         -- (20 DOWNTO 16)FUNCTION
         -- (20 DOWNTO 5)IMM
-        OUTP : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0));
+        OUTP : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0) := (OTHERS => '0'));
 END PipelinedProcessor;
 
 ARCHITECTURE pipe OF PipelinedProcessor IS
@@ -180,7 +180,7 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     SIGNAL PC_IN_temp : STD_LOGIC_VECTOR(n - 1 DOWNTO 0) := (OTHERS => '0');
     SIGNAL PC_IN : STD_LOGIC_VECTOR(n - 1 DOWNTO 0) := (OTHERS => '0');
     SIGNAL PC_PLUS_TWO : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
-    SIGNAL PC_OUT : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    SIGNAL PC_OUT : STD_LOGIC_VECTOR(n - 1 DOWNTO 0) := (OTHERS => '0');
 
     ---------------> Decode Signals <--------------
     SIGNAL DECODEOUT1 : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
