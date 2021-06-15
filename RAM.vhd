@@ -10,9 +10,12 @@ ENTITY RAM IS
 		clk, reset : IN STD_LOGIC;
 		we : IN STD_LOGIC;
 		address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
+		sp_address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
 		--To read and write two consecuetive places at a time
 		datain : IN STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
-		dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0));
+		dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
+		sp_dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0)
+	);
 END ENTITY RAM;
 
 ARCHITECTURE sync_ram_a OF RAM IS
@@ -35,11 +38,14 @@ BEGIN
 				--Write two places at a time address-->MSBs, address+1-->LSBs
 				ram(to_integer(unsigned((address)))) <= datain(STORED_DATA_SIZE * 2 - 1 DOWNTO STORED_DATA_SIZE);
 				ram(to_integer(unsigned((address)) + 1)) <= datain(STORED_DATA_SIZE - 1 DOWNTO 0);
+				-- ram(to_integer(unsigned((sp_address)))) <= datain(STORED_DATA_SIZE * 2 - 1 DOWNTO STORED_DATA_SIZE);
+				-- ram(to_integer(unsigned((sp_address)) + 1)) <= datain(STORED_DATA_SIZE - 1 DOWNTO 0);
 			END IF;
 		END IF;
 	END PROCESS;
 
 	--Read two places at a time address-->MSBs, address+1-->LSBs
 	dataout <= ram(to_integer(unsigned((address)))) & ram(to_integer(unsigned((address)) + 1));
+	sp_dataout <= ram(to_integer(unsigned((sp_address)))) & ram(to_integer(unsigned((sp_address)) + 1));
 
 END sync_ram_a;

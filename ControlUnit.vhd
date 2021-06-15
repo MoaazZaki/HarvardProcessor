@@ -17,12 +17,13 @@ ENTITY ControlUnit IS
         IN_PORT_INSTR : OUT STD_LOGIC;
         OUT_PORT_INSTR : OUT STD_LOGIC;
         ADD2_OR_SUB2_Stack : OUT STD_LOGIC;
-        CALL_INST : OUT STD_LOGIC
+        CALL_INST : OUT STD_LOGIC;
+        RET_INST : OUT STD_LOGIC
     );
 END ControlUnit;
 
 ARCHITECTURE rtl OF ControlUnit IS
-    SIGNAL ALU_Operation_temp, MEM_Write_temp, MEM_Read_temp, MEM_useStack_temp, WB_WBEnable_temp, IN_PORT_INSTR_temp, OUT_PORT_INSTR_temp, CALL_INST_temp : STD_LOGIC;
+    SIGNAL ALU_Operation_temp, MEM_Write_temp, MEM_Read_temp, MEM_useStack_temp, WB_WBEnable_temp, IN_PORT_INSTR_temp, OUT_PORT_INSTR_temp, CALL_INST_temp, RET_INST_temp : STD_LOGIC;
 BEGIN
     ALU_Src_ImmOrReg <= '0' WHEN (instruction(31 DOWNTO 30) = "00")
         ELSE
@@ -81,6 +82,10 @@ BEGIN
         ELSE
         '0';--'1' if it's a call instruction and zero otherwise
 
+    RET_INST_temp <= '1' WHEN (instruction(31 DOWNTO 27) = "10101")
+        ELSE
+        '0';--'1' if it's a ret instruction and zero otherwise
+
     -------------------Stalling Conditions---------------------------
     ALU_Operation <= ALU_Operation_temp WHEN (IshouldStall = '0')
         ELSE
@@ -113,4 +118,9 @@ BEGIN
     CALL_INST <= CALL_INST_temp WHEN (IshouldStall = '0')
         ELSE
         '0';
+
+    RET_INST <= RET_INST_temp WHEN (IshouldStall = '0')
+    ELSE
+    '0';
+
 END ARCHITECTURE;
