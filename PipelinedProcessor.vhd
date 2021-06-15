@@ -55,6 +55,14 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
             q : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0));
     END COMPONENT;
     --
+    COMPONENT FlagsRegister IS
+        GENERIC (n : INTEGER := 32);
+        PORT (
+            clk, reset, enable : IN STD_LOGIC;
+            d : IN STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+            q : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0));
+    END COMPONENT;
+    --
     COMPONENT RegisterPC IS
         GENERIC (n : INTEGER := 32);
         PORT (
@@ -88,6 +96,15 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
             OUT_PORT_INSTR : OUT STD_LOGIC;
             ADD2_OR_SUB2_Stack : OUT STD_LOGIC;
             CALL_INST : OUT STD_LOGIC
+        );
+    END COMPONENT;
+    --
+    COMPONENT JumpControl IS
+        GENERIC (N : INTEGER := 5);
+        PORT (
+            operation : IN STD_LOGIC_VECTOR(N - 1 DOWNTO 0);
+            flags : IN STD_LOGIC_VECTOR(2 DOWNTO 0);
+            branchTaken: OUT STD_LOGIC
         );
     END COMPONENT;
     --
@@ -163,6 +180,8 @@ ARCHITECTURE pipe OF PipelinedProcessor IS
     ---------------> Decode Signals <--------------
     SIGNAL DECODEOUT1 : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
     SIGNAL DECODEOUT2 : STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+    ---------------> Branching Signals <--------------
+    SIGNAL BRANCHTAKEN : STD_LOGIC;
     ---------------> Execute Signals <--------------
     SIGNAL ID_EX_IN : STD_LOGIC_VECTOR(139 - 1 DOWNTO 0);
     SIGNAL ID_EX_OUT : STD_LOGIC_VECTOR(139 - 1 DOWNTO 0);
@@ -278,20 +297,22 @@ BEGIN
     INSTRUCTION <= IF_ID_OUT(31 DOWNTO 0);
     --Increment the PC by 1 if it's a 16-bit instruction and 2 if it's a 32-bit instruction.
     --TODO: More cases will have to be handled if we are gonna implement the branch instructions.
-    PC_IN <= STD_LOGIC_VECTOR(unsigned(PC_OUT) + 1)
-        WHEN FETCHED_INSTRUCTION(30) = '0'
-        ELSE
-        STD_LOGIC_VECTOR(unsigned(PC_OUT) + 2);
+    PC_IN <= STD_LOGIC_VECTOR(unsigned(PC_OUT) + 1) WHEN FETCHED_INSTRUCTION(30) = '0' AND BRANCHTAKEN = '0'
+        ELSE STD_LOGIC_VECTOR(unsigned(PC_OUT) + 2) WHEN FETCHED_INSTRUCTION(30) = '1' AND BRANCHTAKEN = '0'
+        ELSE DECODEOUT1 WHEN BRANCHTAKEN = '1';
 
     -- Decoding stage
     REG_READ_WRITE : Registers PORT MAP(clk, reset, WRTIE_TO_REG, INSTRUCTION(26 DOWNTO 24), INSTRUCTION(23 DOWNTO 21), adressToWriteBackToReg_MEM_WB, ValueToWriteBackToReg_MEM_WB, DECODEOUT1, DECODEOUT2);
-    HAZARD_DETECTION_UNIT : HazardDetectionUnit PORT MAP('0', ID_EX_OUT(96), INSTRUCTION(26 DOWNTO 24), INSTRUCTION(23 DOWNTO 21), ID_EX_OUT(103 DOWNTO 101), HZD_CHANGE_IF_ID_BUFFER, HZD_CHANGE_PC, HZD_STALL); --TODO:  in case we are gonna implement the branch instructions, the BT flag won't always be 1.
+    HAZARD_DETECTION_UNIT : HazardDetectionUnit PORT MAP(BRANCHTAKEN, ID_EX_OUT(96), INSTRUCTION(26 DOWNTO 24), INSTRUCTION(23 DOWNTO 21), ID_EX_OUT(103 DOWNTO 101), HZD_CHANGE_IF_ID_BUFFER, HZD_CHANGE_PC, HZD_STALL); 
     CONTROL_UNIT : ControlUnit PORT MAP(INSTRUCTION, HZD_STALL, CNT_SRC_IS_IMM, CNT_IS_ALU_OPERATION, CNT_IS_MEM_WRITE, CNT_IS_MEM_READ, CNT_IS_STACK, CNT_WB_IS_ON, CNT_WB_TO_MEM, CNT_IS_IN, CNT_IS_OUT, CNT_IS_ADD2_OR_SUB2_STACK, CNT_IS_CALL_INST); -- TODO: Replace '0' with stall flag
     OUTP <= DECODEOUT1 -- OUTPORT
         WHEN
         CNT_IS_OUT = '1'
         ELSE
         (OTHERS => 'X');
+
+    --Branching part
+    JUMP_CONTOL : JumpControl GENERIC MAP(5) PORT MAP(INSTRUCTION(31 DOWNTO 27),ALU_FLAGS_STORED,BRANCHTAKEN);
 
     -- Execute Stage
     ID_EX_IN <= IF_ID_OUT(63 DOWNTO 32) & CNT_IS_CALL_INST & CNT_IS_ADD2_OR_SUB2_STACK & CNT_IS_IN & INSTRUCTION(23 DOWNTO 21) & CNT_IS_ALU_OPERATION & CNT_SRC_IS_IMM & CNT_IS_ALU_OPERATION & CNT_IS_STACK & CNT_IS_MEM_READ & CNT_IS_MEM_WRITE & CNT_WB_IS_ON & CNT_WB_TO_MEM & INSTRUCTION(20 DOWNTO 5) & INSTRUCTION(26 DOWNTO 24) & INSTRUCTION(31 DOWNTO 27) & INSTRUCTION(20 DOWNTO 16) & DECODEOUT2 & DECODEOUT1;
@@ -316,14 +337,14 @@ BEGIN
         ELSE
         ID_EX_OUT(63 DOWNTO 32); --NO Forwarding
 
-    OPERAND2_AFTER_FORWARDING <= (31 DOWNTO 16 => ID_EX_OUT(92)) & ID_EX_OUT(92 DOWNTO 77) -- Immediate with Sign extend
+    OPERAND2_AFTER_FORWARDING <= (31 DOWNTO 16 => '0') & ID_EX_OUT(92 DOWNTO 77) -- Immediate with Sign extend
         WHEN
         ID_EX_OUT(99) = '1'
         ELSE
         OPERAND2;
 
     ALU_MODULE : ALU PORT MAP(OPERAND1_AFTER_FORWARDING, OPERAND2_AFTER_FORWARDING, ID_EX_OUT(73 DOWNTO 69), ID_EX_OUT(68 DOWNTO 64), ALU_OUT, ALU_FLAGS_OUT);
-    FLAGS_REG : RegisterDFF GENERIC MAP(3) PORT MAP(clk, reset, ID_EX_OUT(98), ALU_FLAGS_OUT, ALU_FLAGS_STORED);
+    FLAGS_REG : FlagsRegister GENERIC MAP(3) PORT MAP(clk, reset, ID_EX_OUT(98), ALU_FLAGS_OUT, ALU_FLAGS_STORED);
     -- Memory Stage
     EX_MEM_IN <= ID_EX_OUT(138 DOWNTO 107) & ID_EX_OUT(106) & ID_EX_OUT(105) & ID_EX_OUT(104) & ID_EX_OUT(103 DOWNTO 101) & ID_EX_OUT(97) & ID_EX_OUT(96) & ID_EX_OUT(95) & ID_EX_OUT(94) & ID_EX_OUT(93) & ALU_OUT & OPERAND2 & ID_EX_OUT(76 DOWNTO 74);
     EX_MEM_REG : RegisterDFF GENERIC MAP(110) PORT MAP(clk, reset, '1', EX_MEM_IN, EX_MEM_OUT);
