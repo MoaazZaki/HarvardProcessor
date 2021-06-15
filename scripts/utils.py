@@ -30,6 +30,9 @@ memory_immediate_operation_map = {}
 for i, op in enumerate(MEMORY_AND_IMMEDIATE):
     memory_immediate_operation_map[op] = '01' + convert_to_binary(
         i, 3) if op not in ['ldm', 'iadd'] else '011' + convert_to_binary(i - 4 + 2, 2)
+branch_operation_map = {}
+for i, op in enumerate(BRANCH):
+    branch_operation_map[op] = '10' + convert_to_binary(i, 3)
 
 
 def get_reg_number(register_string):
@@ -68,6 +71,14 @@ def convert_memory_immediate(instruction):
     return insruction_bits
 
 
+def convert_branch(instruction):
+    insruction_bits = branch_operation_map[instruction[0]]
+    insruction_bits += get_reg_number(
+        instruction[1]) if instruction[0] != 'ret' else '0' * REGISTER_ADRESS_SIZE
+    insruction_bits += '0' * (16 - len(insruction_bits))
+    return insruction_bits
+
+
 def parse_instruction(instruction):
     instruction = re.sub(r'[,()]', ' ', instruction)
     instruction = re.split(r'\s+', instruction.strip())
@@ -76,7 +87,7 @@ def parse_instruction(instruction):
 
 def convert_instruction(instruction):
     instruction = parse_instruction(instruction.lower())
-    return convert_one_operand(instruction) if instruction[0] in ONE_OPERANDS else convert_two_opreand(instruction) if instruction[0] in TWO_OPERANDS else convert_memory_immediate(instruction)
+    return convert_one_operand(instruction) if instruction[0] in ONE_OPERANDS else convert_two_opreand(instruction) if instruction[0] in TWO_OPERANDS else convert_memory_immediate(instruction) if instruction[0] in MEMORY_AND_IMMEDIATE else convert_branch(instruction)
 
 
 def print_16_bits(instruction):
