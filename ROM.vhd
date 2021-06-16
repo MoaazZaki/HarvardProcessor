@@ -9,7 +9,7 @@ ENTITY ROM IS
         ADRESS_SIZE : INTEGER := 20;
         ROM_SIZE : INTEGER := 2 ** 20);
     PORT (
-        address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
+        address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0) := (OTHERS => '0');
         --To read and write two consecuetive places at a time
         dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
         memoryOfZeroForPCReset : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE - 1 DOWNTO 0));

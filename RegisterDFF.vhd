@@ -4,8 +4,8 @@ USE IEEE.STD_LOGIC_1164.ALL;
 ENTITY RegisterDFF IS
 	GENERIC (n : INTEGER := 32);
 	PORT (
-		clk, reset, enable : IN STD_LOGIC;
-		d : IN STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+		clk, reset, enable : IN STD_LOGIC :='1';
+		d : IN STD_LOGIC_VECTOR(n - 1 DOWNTO 0) := (OTHERS => '0');
 		q : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0));
 END RegisterDFF;
 

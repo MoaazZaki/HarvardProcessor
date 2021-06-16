@@ -6,10 +6,10 @@ ENTITY ALU IS
     GENERIC (N : INTEGER := 32);
     PORT (
         -- INPUT
-        operand1 : IN STD_LOGIC_VECTOR(N - 1 DOWNTO 0);
-        operand2 : IN STD_LOGIC_VECTOR(N - 1 DOWNTO 0);
-        operation : IN STD_LOGIC_VECTOR(4 DOWNTO 0);
-        func : IN STD_LOGIC_VECTOR(4 DOWNTO 0);
+        operand1 : IN STD_LOGIC_VECTOR(N - 1 DOWNTO 0) := (OTHERS => '0');
+        operand2 : IN STD_LOGIC_VECTOR(N - 1 DOWNTO 0) := (OTHERS => '0');
+        operation : IN STD_LOGIC_VECTOR(4 DOWNTO 0) := (OTHERS => '0');
+        func : IN STD_LOGIC_VECTOR(4 DOWNTO 0 ):= (OTHERS => '0');
         -- OUTPUT
         result : OUT STD_LOGIC_VECTOR(N - 1 DOWNTO 0) := (OTHERS => '0');
         flagsOUT : OUT STD_LOGIC_VECTOR(2 DOWNTO 0) := "000"

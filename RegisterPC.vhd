@@ -4,9 +4,9 @@ USE IEEE.STD_LOGIC_1164.ALL;
 ENTITY RegisterPC IS
     GENERIC (n : INTEGER := 32);
     PORT (
-        clk, reset, enable : IN STD_LOGIC;
-        memoryOfZero : IN STD_LOGIC_VECTOR(15 DOWNTO 0);
-        d : IN STD_LOGIC_VECTOR(n - 1 DOWNTO 0);
+        clk, reset, enable : IN STD_LOGIC :='1';
+        memoryOfZero : IN STD_LOGIC_VECTOR(15 DOWNTO 0) := (OTHERS => '0');
+        d : IN STD_LOGIC_VECTOR(n - 1 DOWNTO 0) := (OTHERS => '0');
         q : OUT STD_LOGIC_VECTOR(n - 1 DOWNTO 0));
 END RegisterPC;
 

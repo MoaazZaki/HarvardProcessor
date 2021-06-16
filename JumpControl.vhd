@@ -5,8 +5,8 @@ USE ieee.numeric_std.ALL;
 ENTITY JumpControl IS
     GENERIC (N : INTEGER := 5);
     PORT (
-        operation : IN STD_LOGIC_VECTOR(N - 1 DOWNTO 0);
-        flags : IN STD_LOGIC_VECTOR(2 DOWNTO 0);
+        operation : IN STD_LOGIC_VECTOR(N - 1 DOWNTO 0) := (OTHERS => '0');
+        flags : IN STD_LOGIC_VECTOR(2 DOWNTO 0) := (OTHERS => '0');
         branchTaken: OUT STD_LOGIC
     );
 END JumpControl;
