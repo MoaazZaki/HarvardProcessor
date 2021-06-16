@@ -87,19 +87,20 @@ BEGIN
             IF (operation = "00001" OR operation = "01110") THEN --Move (either register or immediate)
                 result <= operand2;
             ELSIF (operation = "00011") THEN --Sub
-                tempResultPlusCarry := STD_LOGIC_VECTOR(unsigned('0' & operand2) - unsigned('0' & operand1));
-                IF (to_integer(unsigned(tempResultPlusCarry)) = 0) THEN --set zero flag
+                tempResult := STD_LOGIC_VECTOR(unsigned(operand2) - unsigned(operand1));
+                IF (to_integer(unsigned(tempResult)) = 0) THEN --set zero flag
                     flagsOUT(0) <= '1';
                 ELSE
                     flagsOUT(0) <= '0'; --clear zero flag
                 END IF;
-                IF (tempResultPlusCarry(N - 1) = '1') THEN --set negative flag
+                IF (tempResult(N - 1) = '1') THEN --set negative flag
                     flagsOUT(1) <= '1';
                 ELSE
                     flagsOUT(1) <= '0'; --clear negative flag
                 END IF;
-                result <= tempResultPlusCarry(N - 1 DOWNTO 0);
-                flagsOUT(2) <= tempResultPlusCarry(N);
+                flagsOUT(2) <= operand2(N-1) NAND tempResult(N-1);      --assign the carry flag
+                result <= tempResult(N - 1 DOWNTO 0);
+                --flagsOUT(2) <= tempResult(N);
 
             ELSIF (operation = "00100") THEN --And
                 tempResult := operand1 AND operand2;
