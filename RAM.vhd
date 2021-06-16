@@ -7,12 +7,12 @@ ENTITY RAM IS
 		ADRESS_SIZE : INTEGER := 20;
 		RAM_SIZE : INTEGER := 2 ** 20);
 	PORT (
-		clk, reset : IN STD_LOGIC;
-		we : IN STD_LOGIC;
-		address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
-		sp_address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0);
+		clk, reset : IN STD_LOGIC :='1';
+		we : IN STD_LOGIC := '0';
+		address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0) := (OTHERS => '0');
+		sp_address : IN STD_LOGIC_VECTOR(ADRESS_SIZE - 1 DOWNTO 0) := (OTHERS => '0');
 		--To read and write two consecuetive places at a time
-		datain : IN STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
+		datain : IN STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0) := (OTHERS => '0');
 		dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0);
 		sp_dataout : OUT STD_LOGIC_VECTOR(STORED_DATA_SIZE * 2 - 1 DOWNTO 0)
 	);

@@ -7,8 +7,8 @@ ENTITY VectorDecoder IS
         VECTOR_SIZE : INTEGER := 8;
         INDEX_SIZE : INTEGER := 3);
     PORT (
-        enable : IN STD_LOGIC;
-        INDEX : IN STD_LOGIC_VECTOR(INDEX_SIZE - 1 DOWNTO 0);
+        enable : IN STD_LOGIC :='0';
+        INDEX : IN STD_LOGIC_VECTOR(INDEX_SIZE - 1 DOWNTO 0) := (OTHERS => '0');
         VECTOR : OUT STD_LOGIC_VECTOR(VECTOR_SIZE - 1 DOWNTO 0));
 END VectorDecoder;
 

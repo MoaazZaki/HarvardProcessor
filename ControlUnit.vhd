@@ -5,8 +5,8 @@ USE ieee.numeric_std.ALL;
 ENTITY ControlUnit IS
     GENERIC (N : INTEGER := 32);
     PORT (
-        instruction : IN STD_LOGIC_VECTOR(N - 1 DOWNTO 0);
-        IshouldStall : IN STD_LOGIC;
+        instruction : IN STD_LOGIC_VECTOR(N - 1 DOWNTO 0) := (OTHERS => '0');
+        IshouldStall : IN STD_LOGIC :='0';
         ALU_Src_ImmOrReg : OUT STD_LOGIC;
         ALU_Operation : OUT STD_LOGIC;
         MEM_Write : OUT STD_LOGIC;

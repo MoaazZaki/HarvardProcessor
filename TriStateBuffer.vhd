@@ -4,8 +4,8 @@ USE IEEE.STD_LOGIC_1164.ALL;
 ENTITY TriStateBuffer IS
 GENERIC ( n : integer := 32);
 PORT(
-input: in std_logic_vector(n-1 DOWNTO 0);
-enable : in std_logic;
+input: in std_logic_vector(n-1 DOWNTO 0) := (OTHERS => '0');
+enable : in std_logic :='0';
 output : out std_logic_vector(n-1 DOWNTO 0));
 END TriStateBuffer;
 
