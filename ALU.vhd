@@ -23,6 +23,8 @@ BEGIN
         VARIABLE operandComplement : STD_LOGIC_VECTOR(N - 1 DOWNTO 0);
         VARIABLE tempResultPlusCarry : STD_LOGIC_VECTOR(N DOWNTO 0);
         VARIABLE tempResult : STD_LOGIC_VECTOR(N - 1 DOWNTO 0);
+        VARIABLE subCarry : STD_LOGIC_VECTOR(N - 1 DOWNTO 0);
+        VARIABLE subResult : STD_LOGIC_VECTOR(N - 1 DOWNTO 0);
     BEGIN
         IF (operation = "00000") THEN --ONE-OPERAND OPERATIONS
             IF (func = "00000") THEN --No operation
@@ -87,19 +89,25 @@ BEGIN
             IF (operation = "00001" OR operation = "01110") THEN --Move (either register or immediate)
                 result <= operand2;
             ELSIF (operation = "00011") THEN --Sub
-                tempResult := STD_LOGIC_VECTOR(unsigned(operand2) - unsigned(operand1));
-                IF (to_integer(unsigned(tempResult)) = 0) THEN --set zero flag
+                
+                --subtraction using 1's complement
+                tempResultPlusCarry := STD_LOGIC_VECTOR(unsigned('0' & operand2) + NOT unsigned('0' & operand1));
+                subCarry := (OTHERS => '0');
+                subCarry(0) := tempResultPlusCarry(N);
+                subResult := STD_LOGIC_VECTOR(unsigned(tempResultPlusCarry(N - 1 DOWNTO 0)) + unsigned(subCarry));      --adding any resulting carry
+                
+                IF (to_integer(unsigned(subResult)) = 0) THEN --set zero flag
                     flagsOUT(0) <= '1';
                 ELSE
                     flagsOUT(0) <= '0'; --clear zero flag
                 END IF;
-                IF (tempResult(N - 1) = '1') THEN --set negative flag
+                IF (subResult(N - 1) = '1') THEN --set negative flag
                     flagsOUT(1) <= '1';
                 ELSE
                     flagsOUT(1) <= '0'; --clear negative flag
                 END IF;
-                flagsOUT(2) <= operand2(N-1) NAND tempResult(N-1);      --assign the carry flag
-                result <= tempResult(N - 1 DOWNTO 0);
+                flagsOUT(2) <= operand2(N-1) NAND subResult(N-1);      --assign the carry flag
+                result <= subResult;
                 --flagsOUT(2) <= tempResult(N);
 
             ELSIF (operation = "00100") THEN --And
