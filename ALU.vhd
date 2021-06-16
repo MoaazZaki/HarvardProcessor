@@ -62,25 +62,27 @@ BEGIN
                 flagsOUT(2) <= tempResultPlusCarry(N);
 
             ELSIF (func = "00101") THEN --decrement
-                tempResultPlusCarry := STD_LOGIC_VECTOR(unsigned('0' & operand1) - to_unsigned(1, N));
-                IF (to_integer(unsigned(tempResultPlusCarry)) = 0) THEN --set zero flag
+                tempResult := STD_LOGIC_VECTOR(unsigned(operand1) - to_unsigned(1, N));
+                IF (to_integer(unsigned(tempResult)) = 0) THEN --set zero flag
                     flagsOUT(0) <= '1';
                 ELSE
                     flagsOUT(0) <= '0'; --clear zero flag
                 END IF;
-                IF (tempResultPlusCarry(N - 1) = '1') THEN --set negative flag
+                IF (tempResult(N - 1) = '1') THEN --set negative flag
                     flagsOUT(1) <= '1';
                 ELSE
                     flagsOUT(1) <= '0'; --clear negative flag
                 END IF;
-                result <= tempResultPlusCarry(N - 1 DOWNTO 0);
-                flagsOUT(2) <= tempResultPlusCarry(N);
+                flagsOUT(2) <= operand2(N-1) NAND tempResult(N-1);      --assign the carry flag
+                result <= tempResult(N - 1 DOWNTO 0);
+                --flagsOUT(2) <= tempResult(N);
 
             ELSIF (func = "00110") THEN --out
                 result <= operand1;
             ELSE --in
                 result <= operand1;
             END IF;
+
         ELSE --TWO-OPERAND OPERATIONS
             IF (operation = "00001" OR operation = "01110") THEN --Move (either register or immediate)
                 result <= operand2;
@@ -112,6 +114,7 @@ BEGIN
                     flagsOUT(1) <= '0'; --clear negative flag
                 END IF;
                 result <= tempResult;
+
             ELSIF (operation = "00101") THEN --Or
                 tempResult := operand1 OR operand2;
                 IF (to_integer(unsigned(tempResult)) = 0) THEN --set zero flag
@@ -125,12 +128,15 @@ BEGIN
                     flagsOUT(1) <= '0'; --clear negative flag
                 END IF;
                 result <= tempResult;
+
             ELSIF (operation = "00110") THEN --Shift left 
                 result <= STD_LOGIC_VECTOR(shift_left(unsigned(operand1), to_integer(unsigned(func))));
                 flagsOUT(2) <= operand1(N - to_integer(unsigned(func)));
+
             ELSIF (operation = "00111") THEN --Shift right
                 result <= STD_LOGIC_VECTOR(shift_right(unsigned(operand1), to_integer(unsigned(func))));
                 flagsOUT(2) <= operand1(to_integer(unsigned(func)) - 1);
+
             ELSE --Add (this is for ALU operations and even memory operations as well)
                 tempResultPlusCarry := STD_LOGIC_VECTOR(unsigned('0' & operand1) + unsigned('0' & operand2));
                 IF (to_integer(unsigned(tempResultPlusCarry)) = 0) THEN --set zero flag
