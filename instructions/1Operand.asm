@@ -8,10 +8,10 @@
 .ORG 2  #this is the interrupt address
 100
 
-.ORG 10                                                         # first cycle (reset) -> 1
-SETC           #C --> 1                                           (EX)   output cycle -> 4
-NOP            #No change                                               stall for 1 cycle -> 5
-ClRC           #C --> 0                                           (EX) output cycle -> 8
+.ORG 10                                                         
+SETC           #C --> 1                                           
+NOP            #No change                                          
+ClRC           #C --> 0                                           
 NOT R1         #R1 =FFFFFFFF , C--> no change, N --> 1, Z --> 0
 inc R1           #R1 =00000000 , C --> 1 , N --> 0 , Z --> 1
 in R1           #R1= 5,add 5 on the in port,flags no change    
@@ -22,3 +22,4 @@ Dec R2         #R2= FFFFFFEE,C-->1 , N-->1, Z-->0
 out R1
 out R2
 
+#number of cycles= 5+12-1=16 + 1 cycle for reset
