@@ -18,7 +18,8 @@ ENTITY ControlUnit IS
         OUT_PORT_INSTR : OUT STD_LOGIC;
         ADD2_OR_SUB2_Stack : OUT STD_LOGIC;
         CALL_INST : OUT STD_LOGIC;
-        RET_INST : OUT STD_LOGIC
+        RET_INST : OUT STD_LOGIC;
+        IS_LOAD : OUT STD_LOGIC
     );
 END ControlUnit;
 
@@ -85,7 +86,9 @@ BEGIN
     RET_INST_temp <= '1' WHEN (instruction(31 DOWNTO 27) = "10101")
         ELSE
         '0';--'1' if it's a ret instruction and zero otherwise
-
+    IS_LOAD <= '1' WHEN (instruction(31 DOWNTO 27) = "01011")
+        ELSE --if the instruction is load
+        '0';
     -------------------Stalling Conditions---------------------------
     ALU_Operation <= ALU_Operation_temp WHEN (IshouldStall = '0')
         ELSE
@@ -120,7 +123,7 @@ BEGIN
         '0';
 
     RET_INST <= RET_INST_temp WHEN (IshouldStall = '0')
-    ELSE
-    '0';
+        ELSE
+        '0';
 
 END ARCHITECTURE;

@@ -16,7 +16,7 @@ force -freeze sim:/pipelinedprocessor/reset 1 0
 run
 force -freeze sim:/pipelinedprocessor/reset 0 0
 
-#INSTRUCTIONS=13--> clock cycles=5+13-1=17
+#INSTRUCTIONS=13--> clock cycles=5+13-1 + =17
 force -freeze sim:/pipelinedprocessor/INP 16#00000019 0
 run
 force -freeze sim:/pipelinedprocessor/INP 16#0000FFFF 0
@@ -38,3 +38,4 @@ run
 run
 run
 run
+
